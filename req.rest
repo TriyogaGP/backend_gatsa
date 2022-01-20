@@ -1,0 +1,7 @@
+POST http://localhost:5000/restApi/moduleLogin/login
+Content-Type: application/json
+
+{
+    "email": "percobaan@gmail.com",
+    "password": "percobaan"
+}
