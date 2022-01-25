@@ -1,15 +1,16 @@
 const { m_user } = require('../../models');
+const readXlsxFile = require('read-excel-file/node');
 
 error = {}
 
 const readData = (req, res) => {
     // buat query sql
-    const querySql = `SELECT a.id, a.roleID, a.name, a.email, a.password, a.gambar, a.gambarGmail, a.codeLog, a.activeAkun, 
+    const querySql = `SELECT a.id, a.roleID, a.name, a.email, a.password, a.gambar, a.gambarGmail, a.codeLog, a.kodeOTP, a.activeAkun, 
         DATE_FORMAT(a.createdAt,'%Y-%m-%d') AS createdAt, DATE_FORMAT(a.updatedAt,'%Y-%m-%d') AS updatedAt, b.roleName, 
         c.*, ROW_NUMBER() OVER(ORDER BY a.id ASC) AS item_no FROM users AS a 
         INNER JOIN roleUsers AS b ON a.roleID=b.id 
         INNER JOIN users_details AS c ON a.id=c.id_profile
-        WHERE a.roleID = ? && a.id = ? ORDER BY item_no ASC`;
+        WHERE a.roleID = ? && a.id != ? ORDER BY item_no ASC`;
     
     // masukkan ke dalam model
     m_user.getUsers(res, querySql, req.query);
@@ -19,11 +20,12 @@ const createupdateData = (req, res) => {
     // buat variabel penampung data dan query sql
     const data = { ...req.body };
     const queryCheck = 'SELECT a.*, b.* FROM users AS a INNER JOIN users_details AS b ON a.id=b.id_profile WHERE a.email = ? OR b.nomor_induk = ?';
+    const queryCheck2 = 'SELECT * FROM users WHERE email = ?';
     const querySqlUsers = data.id !== null ? 'UPDATE users SET ? WHERE id = ?' : 'INSERT INTO users SET ?';
     const querySqlUsersDetails = data.id !== null ? 'UPDATE users_details SET ? WHERE id_profile = ?' : 'INSERT INTO users_details SET ?';
     
     // // masukkan ke dalam model
-    m_user.createupdateUsers(res, queryCheck, querySqlUsers, querySqlUsersDetails, data);
+    m_user.createupdateUsers(res, queryCheck, queryCheck2, querySqlUsers, querySqlUsersDetails, data);
 };
 
 const updateDataBY = (req, res) => {
@@ -86,8 +88,8 @@ const readDataProvinsi = (req, res) => {
 
 const readDataKabKota = (req, res) => {
     // buat variabel penampung data dan query sql
-    const kode = req.params.provinsi
-    const jmlString = req.params.provinsi.length
+    const kode = req.params.id
+    const jmlString = req.params.id.length
     const whereChar = (jmlString==2?5:(jmlString==5?8:13))
     const data = { kodeWilayah: kode, jmlString: jmlString, kodeLength: whereChar };
     const queryCheck = 'SELECT kode AS value,nama AS label FROM wilayah WHERE LEFT(kode,?)= ? AND CHAR_LENGTH(kode)= ? ORDER BY nama';
@@ -98,8 +100,8 @@ const readDataKabKota = (req, res) => {
 
 const readDataKecamatan = (req, res) => {
     // buat variabel penampung data dan query sql
-    const kode = req.params.kabkota
-    const jmlString = req.params.kabkota.length
+    const kode = req.params.id
+    const jmlString = req.params.id.length
     const whereChar = (jmlString==2?5:(jmlString==5?8:13))
     const data = { kodeWilayah: kode, jmlString: jmlString, kodeLength: whereChar };
     const queryCheck = 'SELECT kode AS value,nama AS label FROM wilayah WHERE LEFT(kode,?)= ? AND CHAR_LENGTH(kode)= ? ORDER BY nama';
@@ -110,14 +112,34 @@ const readDataKecamatan = (req, res) => {
 
 const readDataKelDesa = (req, res) => {
     // buat variabel penampung data dan query sql
-    const kode = req.params.kecamatan
-    const jmlString = req.params.kecamatan.length
+    const kode = req.params.id
+    const jmlString = req.params.id.length
     const whereChar = (jmlString==2?5:(jmlString==5?8:13))
     const data = { kodeWilayah: kode, jmlString: jmlString, kodeLength: whereChar };
     const queryCheck = 'SELECT kode AS value,nama AS label,kode_pos FROM wilayah WHERE LEFT(kode,?)= ? AND CHAR_LENGTH(kode)= ? ORDER BY nama';
     
     // masukkan ke dalam model
     m_user.getKelDesa(res, queryCheck, data);
+};
+
+const updateFile = (req, res) => {
+    // buat variabel penampung data dan qursery sql
+    const { body, files } = req;
+    const dir=files[0];
+    readXlsxFile(dir.path).then((rows) => {
+        rows.shift();
+        let jsonData = [];
+        rows.forEach((row) => {
+            let data = {
+                nama: row[0],
+                email: row[1],
+                password: row[2],
+            };
+            jsonData.push(data);
+        });
+        console.log(jsonData)
+    });
+    // m_user.getKelDesa(res, queryCheck, data);
 };
 
 module.exports = {
@@ -132,4 +154,5 @@ module.exports = {
     readDataKabKota,
     readDataKecamatan,
     readDataKelDesa,
+    updateFile,
 }

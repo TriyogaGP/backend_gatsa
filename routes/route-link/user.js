@@ -13,10 +13,10 @@ router
     .post('/updatekodepos', c_user.updateKodePos)
     .get('/getprovinsi', c_user.readDataProvinsi)
     .get('/getkabkotaonly', c_user.readDataKabKotaOnly)
-    .get('/getkabkota/:provinsi', c_user.readDataKabKota)
-    .get('/getkecamatan/:kabkota', c_user.readDataKecamatan)
-    .get('/getkeldesa/:kecamatan', c_user.readDataKelDesa)
+    .get('/getkabkota/:id', c_user.readDataKabKota)
+    .get('/getkecamatan/:id', c_user.readDataKecamatan)
+    .get('/getkeldesa/:id', c_user.readDataKelDesa)
+    .post('/updateFile', uploadFile, c_user.updateFile)
     // .get('/getusers/:id', verifyToken, c_user.readDataByID)
-    // .post('/updateImage', uploadFile, c_user.updateImage)
     
 module.exports = router;

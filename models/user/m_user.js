@@ -30,114 +30,158 @@ const getUsers = (res, statement, params) => {
     });
 };
 
-const createupdateUsers = (res, statementCheck, Usersstatement, Usersdetailsstatement, data) => {
+const createupdateUsers = (res, statementCheck1, statementCheck2, Usersstatement, Usersdetailsstatement, data) => {
     // jalankan query
 	switch(data.jenis) {
 	case 'ADD' :
-		koneksi.query(statementCheck, [data.email, data.nomor_induk], async(err, result, field) => {
+		koneksi.query(statementCheck1, [data.email, data.nomor_induk], async(err, result, field) => {
 			// error handling
 			if (err) {
 				return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
 			}
-			console.log(result)
-			// if(result.length){
-			// 	return response(res, { kode: '404', message: 'Nama atau Email sudah digunakan' }, 404);
-			// }else{
-			// 	if (data.name == '' || data.name == null) { return response(res, { kode: '404', message: 'Nama Lengkap tidak boleh kosong', error: err }, 404); }
-			// 	else if (data.password == '' || data.password == null) { return response(res, { kode: '404', message: 'Kata Sandi tidak boleh kosong', error: err }, 404); }
-			// 	const salt = await bcrypt.genSalt();
-			// 	const hashPassword = await bcrypt.hash(data.password, salt);
-			// 	const kirimdata1 = {
-			// 		roleID: data.roleID,
-			// 		name: data.name,
-			// 		email: data.email,
-			// 		password: hashPassword,
-			// 		kodeOTP: data.password,
-			// 	}
-			// 	koneksi.query(Usersstatement, kirimdata1, (err, result, field) => {
-			// 		// error handling
-			// 		if (err) {
-			// 			return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
-			// 		}
-			// 		koneksi.query(statementCheck, [data.name, data.email], async(err, result, field) => {
-			// 			// error handling
-			// 			if (err) {
-			// 				return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
-			// 			}
-			// 			const kirimdata2 = {
-			// 				id_profile: result[0].id,
-			// 				nomor_induk: data.nomor_induk,
-			// 				tgl_lahir: data.tgl_lahir,
-			// 				tempat: data.tempat,
-			// 				agama: data.agama,
-			// 				jeniskelamin: data.jeniskelamin,
-			// 				nama_ayah: data.nama_ayah,
-			// 				nama_ibu: data.nama_ibu,
-			// 				telp: data.telp,
-			// 				alamat: data.alamat
-			// 			}
-			// 			// jika request berhasil
-			// 			koneksi.query(Usersdetailsstatement, kirimdata2, (err, result, field) => {
-			// 				// error handling
-			// 				if (err) {
-			// 					return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
-			// 				}
+			if(result.length){
+				if(!data.nomor_induk) return response(res, { kode: '404', message: 'Email sudah digunakan' }, 404);
+				return response(res, { kode: '404', message: 'Nomor Induk atau Email sudah digunakan' }, 404);
+			}else{
+				// if (data.name == '' || data.name == null) { return response(res, { kode: '404', message: 'Nama Lengkap tidak boleh kosong', error: err }, 404); }
+				// else if (data.password == '' || data.password == null) { return response(res, { kode: '404', message: 'Kata Sandi tidak boleh kosong', error: err }, 404); }
+				const salt = await bcrypt.genSalt();
+				const hashPassword = await bcrypt.hash(data.password, salt);
+				const kirimdata1 = {
+					roleID: data.roleID,
+					name: data.name,
+					email: data.email,
+					password: hashPassword,
+					kodeOTP: data.password,
+				}
+				koneksi.query(Usersstatement, kirimdata1, (err, result, field) => {
+					// error handling
+					if (err) {
+						return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+					}
+					koneksi.query(statementCheck2, data.email, async(err, result, field) => {
+						// error handling
+						if (err) {
+							return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+						}
+						const kirimdata2 = {
+							id_profile: result[0].id,
+							nomor_induk: data.roleID == '1' ? null : data.nomor_induk,
+							nik_siswa: data.roleID == '3' ? data.nik_siswa : null,
+							tempat: data.tempat,
+							tgl_lahir: data.tgl_lahir,
+							jeniskelamin: data.jeniskelamin,
+							agama: data.agama,
+							telp: data.telp,
+							alamat: data.alamat,
+							provinsi: data.provinsi,
+							kabkota: data.kabkota,
+							kecamatan: data.kecamatan,
+							kelurahan: data.kelurahan,
+							kode_pos: data.kode_pos,
+							anakke: data.roleID == '3' ? data.anakke : null,
+							jumlah_saudara: data.roleID == '3' ? data.jumlah_saudara : null,
+							hobi: data.roleID == '3' ? data.hobi : null,
+							cita_cita: data.roleID == '3' ? data.cita_cita : null,
+							jenjang: data.roleID == '3' ? data.jenjang : null,
+							status_sekolah: data.roleID == '3' ? data.status_sekolah : null,
+							nama_sekolah: data.roleID == '3' ? data.nama_sekolah : null,
+							npsn: data.roleID == '3' ? data.npsn : null,
+							alamat_sekolah: data.roleID == '3' ? data.alamat_sekolah : null,
+							kabkot_sekolah: data.roleID == '3' ? data.kabkot_sekolah : null,
+							no_peserta_un: data.roleID == '3' ? data.no_peserta_un : null,
+							no_skhun: data.roleID == '3' ? data.no_skhun : null,
+							no_ijazah: data.roleID == '3' ? data.no_ijazah : null,
+							nilai_un: data.roleID == '3' ? data.nilai_un : null,
+							no_kk: data.roleID == '3' ? data.no_kk : null,
+							nama_kk: data.roleID == '3' ? data.nama_kk : null,
+							penghasilan: data.roleID == '3' ? data.penghasilan : null,
+							nik_ayah: data.roleID == '3' ? data.nik_ayah : null,
+							nama_ayah: data.roleID == '3' ? data.nama_ayah : null,
+							tahun_ayah: data.roleID == '3' ? data.tahun_ayah : null,
+							status_ayah: data.roleID == '3' ? data.status_ayah : null,
+							pendidikan_ayah: data.roleID == '3' ? data.pendidikan_ayah : null,
+							pekerjaan_ayah: data.roleID == '3' ? data.pekerjaan_ayah : null,
+							telp_ayah: data.roleID == '3' ? data.telp_ayah : null,
+							nik_ibu: data.roleID == '3' ? data.nik_ibu : null,
+							nama_ibu: data.roleID == '3' ? data.nama_ibu : null,
+							tahun_ibu: data.roleID == '3' ? data.tahun_ibu : null,
+							status_ibu: data.roleID == '3' ? data.status_ibu : null,
+							pendidikan_ibu: data.roleID == '3' ? data.pendidikan_ibu : null,
+							pekerjaan_ibu: data.roleID == '3' ? data.pekerjaan_ibu : null,
+							telp_ibu: data.roleID == '3' ? data.telp_ibu : null,
+							nik_wali: data.roleID == '3' ? data.nik_wali : null,
+							nama_wali: data.roleID == '3' ? data.nama_wali : null,
+							tahun_wali: data.roleID == '3' ? data.tahun_wali : null,
+							pendidikan_wali: data.roleID == '3' ? data.pendidikan_wali : null,
+							pekerjaan_wali: data.roleID == '3' ? data.pekerjaan_wali : null,
+							telp_wali: data.roleID == '3' ? data.telp_wali : null,
+							status_tempat_tinggal: data.roleID == '3' ? data.status_tempat_tinggal : null,
+							jarak_rumah: data.roleID == '3' ? data.jarak_rumah : null,
+							transportasi: data.roleID == '3' ? data.transportasi : null,
+						}
+						// jika request berhasil
+						koneksi.query(Usersdetailsstatement, kirimdata2, (err, result, field) => {
+							// error handling
+							if (err) {
+								return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+							}
 	
-			// 				var transporter = nodemailer.createTransport({
-			// 					service: 'gmail',
-			// 					auth: {
-			// 						user: 'triyoga.ginanjar.p@gmail.com',
-			// 						pass: 'Yoga17051993'
-			// 					}
-			// 				});
+							var transporter = nodemailer.createTransport({
+								service: 'gmail',
+								auth: {
+									user: 'triyoga.ginanjar.p@gmail.com',
+									pass: 'Yoga17051993'
+								}
+							});
 				
-			// 				var mailOptions = {
-			// 					from: 'triyoga.ginanjar.p@gmail.com',
-			// 					to: data.email,
-			// 					subject: 'Konfirmasi Pendaftaran Akun',
-			// 					// text: `Silahkan masukan kode verifikasi akun tersebut`
-			// 					html: `<h1>Konfirmasi Pendataran Akun</h1>
-			// 					<ul>
-			// 						<li>Nama Lengkap : ${data.name}</li>
-			// 						<li>Alamat Email : ${data.email}</li>
-			// 						<li>Kata Sandi : ${data.password}</li>
-			// 					</ul>
-			// 					Ikuti tautan ini untuk mengonfirmasi pendaftaran Anda:<br>
-			// 					<a href="http://localhost:5000/restApi/moduleUser/verifikasi/${data.password}/1">konfirmasi akun</a><br>Jika Anda memiliki pertanyaan, silakan balas email ini`
-			// 				};
+							var mailOptions = {
+								from: 'triyoga.ginanjar.p@gmail.com',
+								to: data.email,
+								subject: 'Konfirmasi Pendaftaran Akun',
+								// text: `Silahkan masukan kode verifikasi akun tersebut`
+								html: `<h1>Konfirmasi Pendataran Akun</h1>
+								<ul>
+									<li>Nama Lengkap : ${data.name}</li>
+									<li>Alamat Email : ${data.email}</li>
+									<li>Kata Sandi : ${data.password}</li>
+								</ul>
+								Ikuti tautan ini untuk mengonfirmasi pendaftaran Anda:<br>
+								<a href="http://localhost:5000/restApi/moduleUser/verifikasi/${data.password}/1">konfirmasi akun</a><br>Jika Anda memiliki pertanyaan, silakan balas email ini`
+							};
 	
-			// 				transporter.sendMail(mailOptions, (err, info) => {
-			// 					console.error(err)
-			// 					if (err) return response(res, { kode: '500', message: 'Gagal mengirim data ke alamat email anda, cek lagi email yang di daftarkan!.', error: err }, 500);;
-			// 					// jika request berhasil
-			// 					kode = 200
-			// 					message = 'Data berhasil disimpan'
-			// 					response(res, { kode, message }, 200);
-			// 				});
-			// 			});
-			// 		});
-			// 	});
-			// }
+							transporter.sendMail(mailOptions, (err, info) => {
+								console.error(err)
+								if (err) return response(res, { kode: '500', message: 'Gagal mengirim data ke alamat email anda, cek lagi email yang di daftarkan!.', error: err }, 500);;
+								// jika request berhasil
+								kode = 200
+								message = 'Data berhasil disimpan'
+								response(res, { kode, message }, 200);
+							});
+						});
+					});
+				});
+			}
 		});
 		break;
 	case 'EDIT':
-		koneksi.query(statementCheck, [data.name, data.email], async(err, result, field) => {
+		koneksi.query(statementCheck1, [data.email, data.nomor_induk], async(err, result, field) => {
 			// error handling
 			if (err) {
 				return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
 			}
 			if(result.length){
 				const salt = await bcrypt.genSalt();
-				const hashPassword = await bcrypt.hash(data.password, salt);
+				const hashPassword = await bcrypt.hash(data.kodeOTP, salt);
 				const passbaru = data.password === result[0].password ? result[0].password : hashPassword
 				const kondisipassbaru = data.password === result[0].password ? '<b>Menggunakan kata sandi yang lama</b>' : data.password
-				const kodeverifikasi = data.password === result[0].password ? data.kodeOTP : data.password
+				const kodeverifikasi = data.password === result[0].password ? result[0].kodeOTP : data.kodeOTP
 				const kirimdata1 = {
 					name: data.name,
 					email: data.email,
 					password: passbaru,
 					activeAkun: '0',
-					kodeOTP: data.password === result[0].password ? data.kodeOTP : data.password
+					kodeOTP: data.password === result[0].password ? result[0].kodeOTP : data.kodeOTP
 				}
 				koneksi.query(Usersstatement, [kirimdata1, data.id], (err, result, field) => {
 					// error handling
@@ -145,15 +189,59 @@ const createupdateUsers = (res, statementCheck, Usersstatement, Usersdetailsstat
 						return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
 					}
 					const kirimdata2 = {
-						nomor_induk: data.nomor_induk,
-						tgl_lahir: data.tgl_lahir,
+						nomor_induk: data.roleID == '1' ? null : data.nomor_induk,
+						nik_siswa: data.roleID == '3' ? data.nik_siswa : null,
 						tempat: data.tempat,
-						agama: data.agama,
+						tgl_lahir: data.tgl_lahir,
 						jeniskelamin: data.jeniskelamin,
-						nama_ayah: data.nama_ayah,
-						nama_ibu: data.nama_ibu,
+						agama: data.agama,
 						telp: data.telp,
-						alamat: data.alamat
+						alamat: data.alamat,
+						provinsi: data.provinsi,
+						kabkota: data.kabkota,
+						kecamatan: data.kecamatan,
+						kelurahan: data.kelurahan,
+						kode_pos: data.kode_pos,
+						anakke: data.roleID == '3' ? data.anakke : null,
+						jumlah_saudara: data.roleID == '3' ? data.jumlah_saudara : null,
+						hobi: data.roleID == '3' ? data.hobi : null,
+						cita_cita: data.roleID == '3' ? data.cita_cita : null,
+						jenjang: data.roleID == '3' ? data.jenjang : null,
+						status_sekolah: data.roleID == '3' ? data.status_sekolah : null,
+						nama_sekolah: data.roleID == '3' ? data.nama_sekolah : null,
+						npsn: data.roleID == '3' ? data.npsn : null,
+						alamat_sekolah: data.roleID == '3' ? data.alamat_sekolah : null,
+						kabkot_sekolah: data.roleID == '3' ? data.kabkot_sekolah : null,
+						no_peserta_un: data.roleID == '3' ? data.no_peserta_un : null,
+						no_skhun: data.roleID == '3' ? data.no_skhun : null,
+						no_ijazah: data.roleID == '3' ? data.no_ijazah : null,
+						nilai_un: data.roleID == '3' ? data.nilai_un : null,
+						no_kk: data.roleID == '3' ? data.no_kk : null,
+						nama_kk: data.roleID == '3' ? data.nama_kk : null,
+						penghasilan: data.roleID == '3' ? data.penghasilan : null,
+						nik_ayah: data.roleID == '3' ? data.nik_ayah : null,
+						nama_ayah: data.roleID == '3' ? data.nama_ayah : null,
+						tahun_ayah: data.roleID == '3' ? data.tahun_ayah : null,
+						status_ayah: data.roleID == '3' ? data.status_ayah : null,
+						pendidikan_ayah: data.roleID == '3' ? data.pendidikan_ayah : null,
+						pekerjaan_ayah: data.roleID == '3' ? data.pekerjaan_ayah : null,
+						telp_ayah: data.roleID == '3' ? data.telp_ayah : null,
+						nik_ibu: data.roleID == '3' ? data.nik_ibu : null,
+						nama_ibu: data.roleID == '3' ? data.nama_ibu : null,
+						tahun_ibu: data.roleID == '3' ? data.tahun_ibu : null,
+						status_ibu: data.roleID == '3' ? data.status_ibu : null,
+						pendidikan_ibu: data.roleID == '3' ? data.pendidikan_ibu : null,
+						pekerjaan_ibu: data.roleID == '3' ? data.pekerjaan_ibu : null,
+						telp_ibu: data.roleID == '3' ? data.telp_ibu : null,
+						nik_wali: data.roleID == '3' ? data.nik_wali : null,
+						nama_wali: data.roleID == '3' ? data.nama_wali : null,
+						tahun_wali: data.roleID == '3' ? data.tahun_wali : null,
+						pendidikan_wali: data.roleID == '3' ? data.pendidikan_wali : null,
+						pekerjaan_wali: data.roleID == '3' ? data.pekerjaan_wali : null,
+						telp_wali: data.roleID == '3' ? data.telp_wali : null,
+						status_tempat_tinggal: data.roleID == '3' ? data.status_tempat_tinggal : null,
+						jarak_rumah: data.roleID == '3' ? data.jarak_rumah : null,
+						transportasi: data.roleID == '3' ? data.transportasi : null,
 					}
 		
 					// jika request berhasil
