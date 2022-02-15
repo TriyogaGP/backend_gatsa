@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 const { verifyToken } = require('../../middleware/verifyToken.js');
 const { uploadFile } = require('../../middleware/uploadFile.js');
+const { uploadBerkas } = require('../../middleware/uploadBerkas.js');
 const { c_user } = require('../../controllers');
 
 router
@@ -17,6 +18,10 @@ router
     .get('/getkecamatan/:id', c_user.readDataKecamatan)
     .get('/getkeldesa/:id', c_user.readDataKelDesa)
     .post('/updateFile', uploadFile, c_user.updateFile)
-    // .get('/getusers/:id', verifyToken, c_user.readDataByID)
+    .post('/updateBerkas', uploadBerkas, c_user.updateBerkas)
+    .get('/downloadexcel/:roleid', c_user.downloadexcel)
+    .get('/exportexcel/:roleid', c_user.exportexcel)
+    .get('/getkelas', c_user.getkelas)
+    .post('/ambilKelas', c_user.ambilKelas)
     
-module.exports = router;
+    module.exports = router;

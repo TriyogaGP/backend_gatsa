@@ -3,18 +3,17 @@ const { response } = require('../../config');
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const nodemailer = require('nodemailer');
+const excel = require("exceljs");
 
 function makeRandom(n) {
-	for (let r = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", 
-				"o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F",
-				 "G", "H", "I",  "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W",
-				 "X", "Y", "Z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"], e = n, t = new Array, a = 0; a <= e - 1; a++) {
-		t[a] = r[parseInt(Math.random() * r.length)];
-		t = t;
-		randomtextnumber = t.join("")
-	}
+	let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charactersLength = characters.length;
+    for ( let i = 0; i < n; i++ ) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+   	}
+   	return result;
 }
-
 const getUsers = (res, statement, params) => {
     // jalankan query
 	koneksi.query(statement, [params.idRole, params.idProfile], (err, result, field) => {
@@ -119,6 +118,10 @@ const createupdateUsers = (res, statementCheck1, statementCheck2, Usersstatement
 							status_tempat_tinggal: data.roleID == '3' ? data.status_tempat_tinggal : null,
 							jarak_rumah: data.roleID == '3' ? data.jarak_rumah : null,
 							transportasi: data.roleID == '3' ? data.transportasi : null,
+							pendidikan_guru: data.roleID === '2' ? data.pendidikan_guru : null,
+							jabatan_guru: data.roleID === '2' ? data.jabatan_guru : null,
+							mengajar_bidang: data.roleID === '2' ? data.mengajar_bidang : null,
+							mengajar_kelas: data.roleID === '2' ? data.mengajar_kelas : null,
 						}
 						// jika request berhasil
 						koneksi.query(Usersdetailsstatement, kirimdata2, (err, result, field) => {
@@ -242,6 +245,10 @@ const createupdateUsers = (res, statementCheck1, statementCheck2, Usersstatement
 						status_tempat_tinggal: data.roleID == '3' ? data.status_tempat_tinggal : null,
 						jarak_rumah: data.roleID == '3' ? data.jarak_rumah : null,
 						transportasi: data.roleID == '3' ? data.transportasi : null,
+						pendidikan_guru: data.roleID === '2' ? data.pendidikan_guru : null,
+						jabatan_guru: data.roleID === '2' ? data.jabatan_guru : null,
+						mengajar_bidang: data.roleID === '2' ? data.mengajar_bidang : null,
+						mengajar_kelas: data.roleID === '2' ? data.mengajar_kelas : null,
 					}
 		
 					// jika request berhasil
@@ -392,26 +399,58 @@ const verifikasiUsers = (res, statement, statementCheck, data) => {
     });
 };
 
-const updateKodePos = (res, statement, statementCheck, data) => {
+const updateKodePos = (res, statement, statementCheck, statementCheck2, data) => {
     // jalankan query
-    koneksi.query(statementCheck, [data.kode1, data.cari, data.jmlkode], (err, result, field) => {
+    // koneksi.query(statementCheck, [data.kode1, data.cari, data.jmlkode], (err, result, field) => {
+    //     // error handling
+    //     if (err) {
+    //         return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+    //     }
+    //     if(result.length){
+	// 		result.forEach(element => {
+	// 			// console.log(element.kode)
+	// 			const kirimData = {
+	// 				kode_pos : data.kode_pos,
+	// 			}
+	// 			koneksi.query(statement, [kirimData, element.kode], (err, result, field) => {
+	// 			    // error handling
+	// 			    if (err) {
+	// 			        return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+	// 			    }			
+	// 			});
+	// 		});
+	// 		kode = 200
+	// 		message = 'Berhasil'
+	// 		response(res, { kode, message }, 200);
+    //     }else{
+    //         return response(res, { kode: '404', message: 'Data tidak ditemukan' }, 404);
+    //     }
+    // });
+    koneksi.query(statementCheck, data.cari, (err, result, field) => {
         // error handling
         if (err) {
             return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
         }
         if(result.length){
-			result.forEach(element => {
-				// console.log(element.kode)
+			for (let i = 0; i < result.length; i++) {
 				const kirimData = {
-					kode_pos : data.kode_pos,
+					kode_pos : data.kode_pos[i],
 				}
-				koneksi.query(statement, [kirimData, element.kode], (err, result, field) => {
-				    // error handling
-				    if (err) {
-				        return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
-				    }			
+				koneksi.query(statementCheck2, result[i].kode, (err, result2, field) => {
+					// error handling
+					if (err) {
+						return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+					}
+					result2.forEach(element => {
+						koneksi.query(statement, [kirimData, element.kode], (err, result, field) => {
+							// error handling
+							if (err) {
+								return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+							}			
+						});
+					});
 				});
-			});
+			}
 			kode = 200
 			message = 'Berhasil'
 			response(res, { kode, message }, 200);
@@ -486,6 +525,1114 @@ const getKelDesa = (res, statementCheck, data) => {
     });
 };
 
+const updateBerkas = (res, statementCheck, Update, data) => {
+    // jalankan query
+    koneksi.query(statementCheck, data.id, (err, result, field) => {
+        // error handling
+        if (err) {
+            return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+        }
+		let kirimData
+		if(data.namaBerkas === 'ijazah'){
+			kirimData = {fc_ijazah: data.namaFile}
+		}else if(data.namaBerkas === 'kk'){
+			kirimData = {fc_kk: data.namaFile}
+		}else if(data.namaBerkas === 'ktp'){
+			kirimData = {fc_ktp_ortu: data.namaFile}
+		}else if(data.namaBerkas === 'aktalahir'){
+			kirimData = {fc_akta_lahir: data.namaFile}
+		}else if(data.namaBerkas === 'skl'){
+			kirimData = {fc_skl: data.namaFile}
+		}
+		koneksi.query(Update, [kirimData, data.id], (err, result, field) => {
+			// error handling
+			if (err) {
+				return response(res, { kode: '500', message: 'Gagal', error: err }, 500);
+			}
+			koneksi.query(statementCheck, data.id, (err, result, field) => {
+				// error handling
+				if (err) {
+					return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+				}
+				kode = 200
+				message = 'Berhasil'
+				response(res, { kode, message, data: result[0] }, 200);
+			});
+		});
+    });
+};
+
+const downloadexcel = (res, roleid) => {
+	let workbook = new excel.Workbook();
+	if(roleid === '3'){
+		let worksheet = workbook.addWorksheet("Data Siswa");
+		let worksheetAgama = workbook.addWorksheet("Agama");
+		let worksheetHobi = workbook.addWorksheet("Hobi");
+		let worksheetCitaCita = workbook.addWorksheet("Cita - Cita");
+		let worksheetJenjangSekolah = workbook.addWorksheet("Jenjang Sekolah");
+		let worksheetStatusSekolah = workbook.addWorksheet("Status Sekolah");
+		let worksheetStatusOrangTua = workbook.addWorksheet("Status Orang Tua");
+		let worksheetPendidikan = workbook.addWorksheet("Pendidikan");
+		let worksheetPekerjaan = workbook.addWorksheet("Pekerjaan");
+		let worksheetStatusTempatTinggal = workbook.addWorksheet("Status Tempat Tinggal");
+		let worksheetJarakRumah = workbook.addWorksheet("Jarak Rumah");
+		let worksheetAlatTransportasi = workbook.addWorksheet("Alat Transportasi");
+		let worksheetPenghasilan = workbook.addWorksheet("Penghasilan");
+
+		//Data Siswa
+		worksheet.columns = [
+			{ header: "NAMA", key: "name", width: 20 },
+			{ header: "EMAIL", key: "email", width: 20 },
+			{ header: "NIK SISWA", key: "nik_siswa", width: 20 },
+			{ header: "NISN", key: "nomor_induk", width: 20 },
+			{ header: "TANGGAL LAHIR", key: "tgl_lahir", width: 20 },
+			{ header: "TEMPAT", key: "tempat", width: 20 },
+			{ header: "JENIS KELAMIN", key: "jeniskelamin", width: 20 },
+			{ header: "AGAMA", key: "agama", width: 20 },
+			{ header: "ANAK KE", key: "anakke", width: 20 },
+			{ header: "JUMLAH SAUDARA", key: "jumlah_saudara", width: 20 },
+			{ header: "HOBI", key: "hobi", width: 20 },
+			{ header: "CITA-CITA", key: "cita_cita", width: 20 },
+			{ header: "JENJANG SEKOLAH", key: "jenjang", width: 20 },
+			{ header: "NAMA SEKOLAH", key: "nama_sekolah", width: 20 },
+			{ header: "STATUS SEKOLAH", key: "status_sekolah", width: 20 },
+			{ header: "NPSN", key: "npsn", width: 20 },
+			{ header: "ALAMAT SEKOLAH", key: "alamat_sekolah", width: 40 },
+			{ header: "KABUPATEN / KOTA SEKOLAH SEBELUMNYA", key: "kabkot_sekolah", width: 20 },
+			{ header: "NOMOR KK", key: "no_kk", width: 20 },
+			{ header: "NAMA KEPALA KELUARGA", key: "nama_kk", width: 20 },
+			{ header: "NIK AYAH", key: "nik_ayah", width: 20 },
+			{ header: "NAMA AYAH", key: "nama_ayah", width: 20 },
+			{ header: "TAHUN AYAH", key: "tahun_ayah", width: 20 },
+			{ header: "STATUS AYAH", key: "status_ayah", width: 20 },
+			{ header: "PENDIDIKAN AYAH", key: "pendidikan_ayah", width: 20 },
+			{ header: "PEKERJAAN AYAH", key: "pekerjaan_ayah", width: 20 },
+			{ header: "NO HANDPHONE AYAH", key: "telp_ayah", width: 20 },
+			{ header: "NIK IBU", key: "nik_ibu", width: 20 },
+			{ header: "NAMA IBU", key: "nama_ibu", width: 20 },
+			{ header: "TAHUN IBU", key: "tahun_ibu", width: 20 },
+			{ header: "STATUS IBU", key: "status_ibu", width: 20 },
+			{ header: "PENDIDIKAN IBU", key: "pendidikan_ibu", width: 20 },
+			{ header: "PEKERJAAN IBU", key: "pekerjaan_ibu", width: 20 },
+			{ header: "NO HANDPHONE IBU", key: "telp_ibu", width: 20 },
+			{ header: "TELEPON", key: "telp", width: 20 },
+			{ header: "ALAMAT", key: "alamat", width: 40 },
+			{ header: "PROVINSI", key: "provinsi", width: 20 },
+			{ header: "KABUPATEN / KOTA", key: "kabkota", width: 20 },
+			{ header: "KECAMATAN", key: "kecamatan", width: 20 },
+			{ header: "KELURAHAN", key: "kelurahan", width: 20 },
+			{ header: "KODE POS", key: "kode_pos", width: 20 },
+			{ header: "PENGHASILAN", key: "penghasilan", width: 20 },
+		];
+		const figureColumns = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ,19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42];
+		figureColumns.forEach((i) => {
+			worksheet.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheet.addRows([{
+			name: 'tes', 
+			email: 'tes@gmail.com', 
+			nik_siswa: '123', 
+			nomor_induk: '123', 
+			tgl_lahir: new Date(),
+			tempat: 'Bogor', 
+			jeniskelamin: 'Laki - Laki', 
+			agama: 'Islam', 
+			anakke: '1', 
+			jumlah_saudara: '1', 
+			hobi: '1', 
+			cita_cita: '1', 
+			jenjang: '1', 
+			nama_sekolah: 'SD. Teka Teki', 
+			status_sekolah: '1', 
+			npsn: '123', 
+			alamat_sekolah: 'Bogor', 
+			kabkot_sekolah: '32.01', 
+			no_kk: '123', 
+			nama_kk: 'Andre', 
+			nik_ayah: '123', 
+			nama_ayah: 'Andre', 
+			tahun_ayah: '1970', 
+			status_ayah: '1', 
+			pendidikan_ayah: '1', 
+			pekerjaan_ayah: '1', 
+			telp_ayah: '123456789', 
+			nik_ibu: '123', 
+			nama_ibu: 'Susi', 
+			tahun_ibu: '1989', 
+			status_ibu: '1', 
+			pendidikan_ibu: '1', 
+			pekerjaan_ibu: '1', 
+			telp_ibu: '123456789', 
+			telp: '123456789', 
+			alamat: 'Bogor', 
+			provinsi: '32', 
+			kabkota: '32.01', 
+			kecamatan: '32.01.01', 
+			kelurahan: '32.01.01.1002', 
+			kode_pos: '16913',
+			penghasilan: '1',
+		}]);
+		
+		//Pil Agama
+		worksheetAgama.columns = [
+			{ header: "KODE", key: "kode", width: 15 },
+			{ header: "LABEL", key: "label", width: 15 }
+		];
+		const figureColumnsAgama = [1, 2];
+		figureColumnsAgama.forEach((i) => {
+			worksheetAgama.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheetAgama.addRows([
+			{ kode: 'Islam', label: 'Islam' },
+			{ kode: 'Katolik', label: 'Katolik' },
+			{ kode: 'Protestan', label: 'Protestan' },
+			{ kode: 'Hindu', label: 'Hindu' },
+			{ kode: 'Budha', label: 'Budha' }
+		]);
+
+		//Pil Hobi
+		worksheetHobi.columns = [
+			{ header: "KODE", key: "kode", width: 10 },
+			{ header: "LABEL", key: "label", width: 50 }
+		];
+		const figureColumnsHobi = [1, 2];
+		figureColumnsHobi.forEach((i) => {
+			worksheetHobi.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheetHobi.addRows([
+			{ kode: '1', label: 'Olahraga' },
+			{ kode: '2', label: 'Kesenian' },
+			{ kode: '3', label: 'Membaca' },
+			{ kode: '4', label: 'Menulis' },
+			{ kode: '5', label: 'Traveling' },
+			{ kode: '6', label: 'Lainnya' },
+		]);
+
+		//Pil CitaCita
+		worksheetCitaCita.columns = [
+			{ header: "KODE", key: "kode", width: 10 },
+			{ header: "LABEL", key: "label", width: 50 }
+		];
+		const figureColumnsCitaCita = [1, 2];
+		figureColumnsCitaCita.forEach((i) => {
+			worksheetCitaCita.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheetCitaCita.addRows([
+			{ kode: '1', label: 'PNS' },
+			{ kode: '2', label: 'TNI/PORLI' },
+			{ kode: '3', label: 'Guru/Dosen' },
+			{ kode: '4', label: 'Dokter' },
+			{ kode: '5', label: 'Politikus' },
+			{ kode: '6', label: 'Wiraswasta' },
+			{ kode: '7', label: 'Pekerja Seni/Lukis/Artis/Sejenis' },
+			{ kode: '8', label: 'Lainnya' },
+		]);
+
+		//Pil JenjangSekolah
+		worksheetJenjangSekolah.columns = [
+			{ header: "KODE", key: "kode", width: 10 },
+			{ header: "LABEL", key: "label", width: 50 }
+		];
+		const figureColumnsJenjangSekolah = [1, 2];
+		figureColumnsJenjangSekolah.forEach((i) => {
+			worksheetJenjangSekolah.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheetJenjangSekolah.addRows([
+			{ kode: '1', label: 'MI' },
+			{ kode: '2', label: 'SD' },
+			{ kode: '3', label: 'SD Terbuka' },
+			{ kode: '4', label: 'SLB-MI' },
+			{ kode: '5', label: 'Paket A' },
+			{ kode: '6', label: 'Salafiyah Ula' },
+			{ kode: '7', label: 'MU`adalah MI' },
+			{ kode: '8', label: 'SLB-SD' },
+			{ kode: '9', label: 'Lainnya' },
+		]);
+
+		//Pil StatusSekolah
+		worksheetStatusSekolah.columns = [
+			{ header: "KODE", key: "kode", width: 10 },
+			{ header: "LABEL", key: "label", width: 50 }
+		];
+		const figureColumnsStatusSekolah = [1, 2];
+		figureColumnsStatusSekolah.forEach((i) => {
+			worksheetStatusSekolah.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheetStatusSekolah.addRows([
+			{ kode: '1', label: 'Negeri' },
+			{ kode: '2', label: 'Swasta' },
+		]);
+
+		//Pil StatusOrangTua
+		worksheetStatusOrangTua.columns = [
+			{ header: "KODE", key: "kode", width: 10 },
+			{ header: "LABEL", key: "label", width: 50 }
+		];
+		const figureColumnsStatusOrangTua = [1, 2];
+		figureColumnsStatusOrangTua.forEach((i) => {
+			worksheetStatusOrangTua.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheetStatusOrangTua.addRows([
+			{ kode: '1', label: 'Masih Hidup' },
+			{ kode: '2', label: 'Sudah Mati' },
+			{ kode: '3', label: 'Tidak Diketahui' },
+		]);
+
+		//Pil Pendidikan
+		worksheetPendidikan.columns = [
+			{ header: "KODE", key: "kode", width: 10 },
+			{ header: "LABEL", key: "label", width: 50 }
+		];
+		const figureColumnsPendidikan = [1, 2];
+		figureColumnsPendidikan.forEach((i) => {
+			worksheetPendidikan.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheetPendidikan.addRows([
+			{ kode: '0', label: 'Tidak Berpendidikan Formal' },
+			{ kode: '1', label: 'SD/Sederajat' },
+			{ kode: '2', label: 'SMP/Sederajat' },
+			{ kode: '3', label: 'SMA/Sederajat' },
+			{ kode: '4', label: 'D1' },
+			{ kode: '5', label: 'D2' },
+			{ kode: '6', label: 'D3' },
+			{ kode: '7', label: 'S1' },
+			{ kode: '8', label: 'S2' },
+			{ kode: '9', label: '>S2' },
+		]);
+
+		//Pil Pekerjaan
+		worksheetPekerjaan.columns = [
+			{ header: "KODE", key: "kode", width: 10 },
+			{ header: "LABEL", key: "label", width: 50 }
+		];
+		const figureColumnsPekerjaan = [1, 2];
+		figureColumnsPekerjaan.forEach((i) => {
+			worksheetPekerjaan.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheetPekerjaan.addRows([
+			{ kode: '1', label: 'Tidak Bekerja' },
+			{ kode: '2', label: 'Pensiunan/Almarhum' },
+			{ kode: '3', label: 'PNS (selain Guru/Dosen/Dokter/Bidan/Perawat)' },
+			{ kode: '4', label: 'TNI/Polisi' },
+			{ kode: '5', label: 'Guru/Dosen' },
+			{ kode: '6', label: 'Pegawai Swasta' },
+			{ kode: '7', label: 'Pengusaha/Wiraswasta' },
+			{ kode: '8', label: 'Pengacara/Hakim/Jaksa/Notaris' },
+			{ kode: '9', label: 'Seniman/Pelukis/Artis/Sejenis' },
+			{ kode: '10', label: 'Dokter/Bidan/Perawat' },
+			{ kode: '11', label: 'Pilot/Pramugari' },
+			{ kode: '12', label: 'Pedagang' },
+			{ kode: '13', label: 'Petani/Peternak' },
+			{ kode: '14', label: 'Nelayan' },
+			{ kode: '15', label: 'Buruh (Tani/Pabrik/Bangunan)' },
+			{ kode: '16', label: 'Sopir/Masinis/Kondektur' },
+			{ kode: '17', label: 'Politikus' },
+			{ kode: '18', label: 'Lainnya' },
+		]);
+
+		//Pil StatusTempatTinggal
+		worksheetStatusTempatTinggal.columns = [
+			{ header: "KODE", key: "kode", width: 10 },
+			{ header: "LABEL", key: "label", width: 50 }
+		];
+		const figureColumnsStatusTempatTinggal = [1, 2];
+		figureColumnsStatusTempatTinggal.forEach((i) => {
+			worksheetStatusTempatTinggal.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheetStatusTempatTinggal.addRows([
+			{ kode: '1', label: 'Milik' },
+			{ kode: '2', label: 'Rumah Orangtua' },
+			{ kode: '3', label: 'Rumah Saudara/Kerabat' },
+			{ kode: '4', label: 'Rumah Dinas' },
+		]);
+
+		//Pil JarakRumah
+		worksheetJarakRumah.columns = [
+			{ header: "KODE", key: "kode", width: 10 },
+			{ header: "LABEL", key: "label", width: 50 }
+		];
+		const figureColumnsJarakRumah = [1, 2];
+		figureColumnsJarakRumah.forEach((i) => {
+			worksheetJarakRumah.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheetJarakRumah.addRows([
+			{ kode: '1', label: '< 1 Km' },
+			{ kode: '2', label: '1 - 3 Km' },
+			{ kode: '3', label: '3 - 5 Km' },
+			{ kode: '4', label: '5 - 10 Km' },
+			{ kode: '5', label: '> 10 Km' },
+		]);
+
+		//Pil AlatTransportasi
+		worksheetAlatTransportasi.columns = [
+			{ header: "KODE", key: "kode", width: 10 },
+			{ header: "LABEL", key: "label", width: 50 }
+		];
+		const figureColumnsAlatTransportasi = [1, 2];
+		figureColumnsAlatTransportasi.forEach((i) => {
+			worksheetAlatTransportasi.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheetAlatTransportasi.addRows([
+			{ kode: '1', label: 'Jalan Kaki' },
+			{ kode: '2', label: 'Sepeda' },
+			{ kode: '3', label: 'Sepeda Motor' },
+			{ kode: '4', label: 'Mobil Pribadi' },
+			{ kode: '5', label: 'Antar Jemput Sekolah' },
+			{ kode: '6', label: 'Angkutan Umum' },
+			{ kode: '7', label: 'Perahu/Sampan' },
+			{ kode: '8', label: 'Lainnya' },
+		]);
+
+		//Pil Penghasilan
+		worksheetPenghasilan.columns = [
+			{ header: "KODE", key: "kode", width: 10 },
+			{ header: "LABEL", key: "label", width: 50 }
+		];
+		const figureColumnsPenghasilan = [1, 2];
+		figureColumnsPenghasilan.forEach((i) => {
+			worksheetPenghasilan.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheetPenghasilan.addRows([
+			{ kode: '1', label: '<= Rp 500.000' },
+			{ kode: '2', label: 'Rp 500.001 - Rp 1.000.000' },
+			{ kode: '3', label: 'Rp 1.000.001 - Rp 2.000.000' },
+			{ kode: '4', label: 'Rp 2.000.001 - Rp 3.000.000' },
+			{ kode: '5', label: 'Rp 3.000.001 - Rp 5.000.000' },
+			{ kode: '6', label: '> Rp 5.000.000' },
+		]);
+
+		res.setHeader(
+			"Content-Disposition",
+			"attachment; filename=TemplateDataSiswa.xlsx"
+		);
+	}else if(roleid === '2'){
+		let worksheet = workbook.addWorksheet("Data Guru");
+		let worksheetAgama = workbook.addWorksheet("Agama");
+		let worksheetPendidikan = workbook.addWorksheet("Pendidikan");
+		let worksheetJabatan = workbook.addWorksheet("Jabatan");
+		let worksheetBidangMengajar = workbook.addWorksheet("Bidang Mengajar");
+
+		//Data Guru
+		worksheet.columns = [
+			{ header: "NAMA", key: "name", width: 20 },
+			{ header: "EMAIL", key: "email", width: 20 },
+			{ header: "TANGGAL LAHIR", key: "tgl_lahir", width: 20 },
+			{ header: "TEMPAT", key: "tempat", width: 20 },
+			{ header: "JENIS KELAMIN", key: "jeniskelamin", width: 20 },
+			{ header: "AGAMA", key: "agama", width: 20 },
+			{ header: "PENDIDIKAN TERAKHIR", key: "pendidikan_guru", width: 25 },
+			{ header: "JABATAN", key: "jabatan_guru", width: 20 },
+			{ header: "MENGAJAR BIDANG", key: "mengajar_bidang", width: 20 },
+			{ header: "MENGAJAR KELAS", key: "mengajar_kelas", width: 20 },
+			{ header: "TELEPON", key: "telp", width: 20 },
+			{ header: "ALAMAT", key: "alamat", width: 40 },
+			{ header: "PROVINSI", key: "provinsi", width: 20 },
+			{ header: "KABUPATEN / KOTA", key: "kabkota", width: 20 },
+			{ header: "KECAMATAN", key: "kecamatan", width: 20 },
+			{ header: "KELURAHAN", key: "kelurahan", width: 20 },
+			{ header: "KODE POS", key: "kode_pos", width: 20 },
+		];
+		const figureColumns = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
+		figureColumns.forEach((i) => {
+			worksheet.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheet.addRows([{
+			name: 'tes', 
+			email: 'tes@gmail.com',
+			tgl_lahir: new Date(),
+			tempat: 'Bogor', 
+			jeniskelamin: 'Laki - Laki', 
+			agama: 'Islam',  
+			pendidikan_guru: '5',  
+			jabatan_guru: 'Staff TU',  
+			mengajar_bidang: 'PKN',  
+			mengajar_kelas: '7,8,9',  
+			telp: '123456789', 
+			alamat: 'Bogor', 
+			provinsi: '32', 
+			kabkota: '32.01', 
+			kecamatan: '32.01.01', 
+			kelurahan: '32.01.01.1002', 
+			kode_pos: '16913',
+		}]);
+
+		//Pil Agama
+		worksheetAgama.columns = [
+			{ header: "KODE", key: "kode", width: 15 },
+			{ header: "LABEL", key: "label", width: 15 }
+		];
+		const figureColumnsAgama = [1, 2];
+		figureColumnsAgama.forEach((i) => {
+			worksheetAgama.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheetAgama.addRows([
+			{ kode: 'Islam', label: 'Islam' },
+			{ kode: 'Katolik', label: 'Katolik' },
+			{ kode: 'Protestan', label: 'Protestan' },
+			{ kode: 'Hindu', label: 'Hindu' },
+			{ kode: 'Budha', label: 'Budha' }
+		]);
+
+		//Pil Pendidikan
+		worksheetPendidikan.columns = [
+			{ header: "KODE", key: "kode", width: 10 },
+			{ header: "LABEL", key: "label", width: 50 }
+		];
+		const figureColumnsPendidikan = [1, 2];
+		figureColumnsPendidikan.forEach((i) => {
+			worksheetPendidikan.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheetPendidikan.addRows([
+			{ kode: '0', label: 'Tidak Berpendidikan Formal' },
+			{ kode: '1', label: 'SD/Sederajat' },
+			{ kode: '2', label: 'SMP/Sederajat' },
+			{ kode: '3', label: 'SMA/Sederajat' },
+			{ kode: '4', label: 'D1' },
+			{ kode: '5', label: 'D2' },
+			{ kode: '6', label: 'D3' },
+			{ kode: '7', label: 'S1' },
+			{ kode: '8', label: 'S2' },
+			{ kode: '9', label: '>S2' },
+		]);
+
+		//Pil Jabatan
+		worksheetJabatan.columns = [
+			{ header: "KODE", key: "kode", width: 30 },
+			{ header: "LABEL", key: "label", width: 30 }
+		];
+		const figureColumnsJabatan = [1, 2];
+		figureColumnsJabatan.forEach((i) => {
+			worksheetJabatan.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheetJabatan.addRows([
+			{ kode: 'Kepala Sekolah', label: 'Kepala Sekolah' },
+			{ kode: 'WaKaBid. Kesiswaan', label: 'WaKaBid. Kesiswaan' },
+			{ kode: 'WaKaBid. Kurikulum', label: 'WaKaBid. Kurikulum' },
+			{ kode: 'WaKaBid. Sarpras', label: 'WaKaBid. Sarpras' },
+			{ kode: 'Kepala TU', label: 'Kepala TU' },
+			{ kode: 'Staff TU', label: 'Staff TU' },
+			{ kode: 'Wali Kelas', label: 'Wali Kelas' },
+			{ kode: 'BP / BK', label: 'BP / BK' },
+			{ kode: 'Pembina Osis', label: 'Pembina Osis' },
+			{ kode: 'Pembina Extrakurikuler', label: 'Pembina Extrakurikuler' },
+			{ kode: 'Kebersihan', label: 'Kebersihan' },
+		]);
+
+		//Pil Bidang Mengajar
+		worksheetBidangMengajar.columns = [
+			{ header: "KODE", key: "kode", width: 30 },
+			{ header: "LABEL", key: "label", width: 30 }
+		];
+		const figureColumnsBidangworksheetBidangMengajar = [1, 2];
+		figureColumnsBidangworksheetBidangMengajar.forEach((i) => {
+			worksheetBidangMengajar.getColumn(i).alignment = { horizontal: "left" };
+		});
+		worksheetBidangMengajar.addRows([
+			{ kode: 'Alquran Hadits', label: 'Alquran Hadits' },
+			{ kode: 'Aqidah Akhlak', label: 'Aqidah Akhlak' },
+			{ kode: 'Bahasa Arab', label: 'Bahasa Arab' },
+			{ kode: 'Bahasa Indonesia', label: 'Bahasa Indonesia' },
+			{ kode: 'Bahasa Inggris', label: 'Bahasa Inggris' },
+			{ kode: 'Bahasa Sunda', label: 'Bahasa Sunda' },
+			{ kode: 'Fiqih', label: 'Fiqih' },
+			{ kode: 'IPA Terpadu', label: 'IPA Terpadu' },
+			{ kode: 'IPS Terpadu', label: 'IPS Terpadu' },
+			{ kode: 'Matematika', label: 'Matematika' },
+			{ kode: 'Penjasorkes', label: 'Penjasorkes' },
+			{ kode: 'PKN', label: 'PKN' },
+			{ kode: 'Prakarya', label: 'Prakarya' },
+			{ kode: 'Seni Budaya', label: 'Seni Budaya' },
+			{ kode: 'SKI', label: 'SKI' },
+		]);
+
+		res.setHeader(
+			"Content-Disposition",
+			"attachment; filename=TemplateDataGuru.xlsx"
+		);
+	}
+	
+	res.setHeader(
+		"Content-Type",
+		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+	);
+  
+    return workbook.xlsx.write(res).then(function () {
+        res.status(200).end();
+    });
+}
+
+const importData = async(res, checkData, InsertUsers, InsertUsersDetails, data) => {
+	for (const [k, v] of Object.entries(data)) {
+		const kodeOTP = makeRandom(8)
+		const salt = await bcrypt.genSalt();
+		const hashPassword = await bcrypt.hash(kodeOTP, salt);
+		const kirimdata1 = {
+			name: v.name,
+			email: v.email,
+			roleID: '3',
+			password: hashPassword,
+			activeAkun: '1',
+			kodeOTP: kodeOTP
+		}
+		koneksi.query(InsertUsers, kirimdata1, (err, result, field) => {
+			// error handling
+			if (err) {
+				return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+			}
+			koneksi.query(checkData, v.email, async(err, result, field) => {
+				// error handling
+				if (err) {
+					return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+				}
+				const kirimdata2 = {
+					id_profile: result[0].id,
+					nomor_induk: v.nomor_induk,
+					nik_siswa: v.nik_siswa,
+					tempat: v.tempat,
+					tgl_lahir: v.tgl_lahir,
+					jeniskelamin: v.jeniskelamin,
+					agama: v.agama,
+					telp: v.telp,
+					alamat: v.alamat,
+					provinsi: v.provinsi,
+					kabkota: v.kabkota,
+					kecamatan: v.kecamatan,
+					kelurahan: v.kelurahan,
+					kode_pos: v.kode_pos,
+					anakke: v.anakke,
+					jumlah_saudara: v.jumlah_saudara,
+					hobi: v.hobi,
+					cita_cita: v.cita_cita,
+					jenjang: v.jenjang,
+					status_sekolah: v.status_sekolah,
+					nama_sekolah: v.nama_sekolah,
+					npsn: v.npsn,
+					alamat_sekolah: v.alamat_sekolah,
+					kabkot_sekolah: v.kabkot_sekolah,
+					no_kk: v.no_kk,
+					nama_kk: v.nama_kk,
+					penghasilan: v.penghasilan,
+					nik_ayah: v.nik_ayah,
+					nama_ayah: v.nama_ayah,
+					tahun_ayah: v.tahun_ayah,
+					status_ayah: v.status_ayah,
+					pendidikan_ayah: v.pendidikan_ayah,
+					pekerjaan_ayah: v.pekerjaan_ayah,
+					telp_ayah: v.telp_ayah,
+					nik_ibu: v.nik_ibu,
+					nama_ibu: v.nama_ibu,
+					tahun_ibu: v.tahun_ibu,
+					status_ibu: v.status_ibu,
+					pendidikan_ibu: v.pendidikan_ibu,
+					pekerjaan_ibu: v.pekerjaan_ibu,
+					telp_ibu: v.telp_ibu,
+				}
+				// jika request berhasil
+				koneksi.query(InsertUsersDetails, kirimdata2, (err, result, field) => {
+					// error handling
+					if (err) {
+						return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+					}
+				});
+			});
+		});
+	}
+	// jika request berhasil
+	kode = 200
+	message = 'Data berhasil disimpan'
+	response(res, { kode, message }, 200);
+}
+
+const exportexcel = (res, Select, roleid) => {
+	koneksi.query(Select, roleid, (err, result, field) => {
+        // error handling
+        if (err) {
+            return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+        }
+
+		let workbook = new excel.Workbook();
+		if(roleid === '3'){
+			let worksheet = workbook.addWorksheet("Data Siswa");
+			let worksheetAgama = workbook.addWorksheet("Agama");
+			let worksheetHobi = workbook.addWorksheet("Hobi");
+			let worksheetCitaCita = workbook.addWorksheet("Cita - Cita");
+			let worksheetJenjangSekolah = workbook.addWorksheet("Jenjang Sekolah");
+			let worksheetStatusSekolah = workbook.addWorksheet("Status Sekolah");
+			let worksheetStatusOrangTua = workbook.addWorksheet("Status Orang Tua");
+			let worksheetPendidikan = workbook.addWorksheet("Pendidikan");
+			let worksheetPekerjaan = workbook.addWorksheet("Pekerjaan");
+			let worksheetStatusTempatTinggal = workbook.addWorksheet("Status Tempat Tinggal");
+			let worksheetJarakRumah = workbook.addWorksheet("Jarak Rumah");
+			let worksheetAlatTransportasi = workbook.addWorksheet("Alat Transportasi");
+			let worksheetPenghasilan = workbook.addWorksheet("Penghasilan");
+
+			//Data Siswa
+			worksheet.columns = [
+				{ header: "NAMA", key: "name", width: 20 },
+				{ header: "EMAIL", key: "email", width: 20 },
+				{ header: "NIK SISWA", key: "nik_siswa", width: 20 },
+				{ header: "NISN", key: "nomor_induk", width: 20 },
+				{ header: "TANGGAL LAHIR", key: "tgl_lahir", width: 20 },
+				{ header: "TEMPAT", key: "tempat", width: 20 },
+				{ header: "JENIS KELAMIN", key: "jeniskelamin", width: 20 },
+				{ header: "AGAMA", key: "agama", width: 20 },
+				{ header: "ANAK KE", key: "anakke", width: 20 },
+				{ header: "JUMLAH SAUDARA", key: "jumlah_saudara", width: 20 },
+				{ header: "HOBI", key: "hobi", width: 20 },
+				{ header: "CITA-CITA", key: "cita_cita", width: 20 },
+				{ header: "JENJANG SEKOLAH", key: "jenjang", width: 20 },
+				{ header: "NAMA SEKOLAH", key: "nama_sekolah", width: 20 },
+				{ header: "STATUS SEKOLAH", key: "status_sekolah", width: 20 },
+				{ header: "NPSN", key: "npsn", width: 20 },
+				{ header: "ALAMAT SEKOLAH", key: "alamat_sekolah", width: 40 },
+				{ header: "KABUPATEN / KOTA SEKOLAH SEBELUMNYA", key: "kabkot_sekolah", width: 20 },
+				{ header: "NOMOR KK", key: "no_kk", width: 20 },
+				{ header: "NAMA KEPALA KELUARGA", key: "nama_kk", width: 20 },
+				{ header: "NIK AYAH", key: "nik_ayah", width: 20 },
+				{ header: "NAMA AYAH", key: "nama_ayah", width: 20 },
+				{ header: "TAHUN AYAH", key: "tahun_ayah", width: 20 },
+				{ header: "STATUS AYAH", key: "status_ayah", width: 20 },
+				{ header: "PENDIDIKAN AYAH", key: "pendidikan_ayah", width: 20 },
+				{ header: "PEKERJAAN AYAH", key: "pekerjaan_ayah", width: 20 },
+				{ header: "NO HANDPHONE AYAH", key: "telp_ayah", width: 20 },
+				{ header: "NIK IBU", key: "nik_ibu", width: 20 },
+				{ header: "NAMA IBU", key: "nama_ibu", width: 20 },
+				{ header: "TAHUN IBU", key: "tahun_ibu", width: 20 },
+				{ header: "STATUS IBU", key: "status_ibu", width: 20 },
+				{ header: "PENDIDIKAN IBU", key: "pendidikan_ibu", width: 20 },
+				{ header: "PEKERJAAN IBU", key: "pekerjaan_ibu", width: 20 },
+				{ header: "NO HANDPHONE IBU", key: "telp_ibu", width: 20 },
+				{ header: "TELEPON", key: "telp", width: 20 },
+				{ header: "ALAMAT", key: "alamat", width: 40 },
+				{ header: "PROVINSI", key: "provinsi", width: 20 },
+				{ header: "KABUPATEN / KOTA", key: "kabkota", width: 20 },
+				{ header: "KECAMATAN", key: "kecamatan", width: 20 },
+				{ header: "KELURAHAN", key: "kelurahan", width: 20 },
+				{ header: "KODE POS", key: "kode_pos", width: 20 },
+				{ header: "PENGHASILAN", key: "penghasilan", width: 20 },
+			];
+			const figureColumns = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ,19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42];
+			figureColumns.forEach((i) => {
+				worksheet.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheet.addRows(result);
+			
+			//Pil Agama
+			worksheetAgama.columns = [
+				{ header: "KODE", key: "kode", width: 15 },
+				{ header: "LABEL", key: "label", width: 15 }
+			];
+			const figureColumnsAgama = [1, 2];
+			figureColumnsAgama.forEach((i) => {
+				worksheetAgama.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheetAgama.addRows([
+				{ kode: 'Islam', label: 'Islam' },
+				{ kode: 'Katolik', label: 'Katolik' },
+				{ kode: 'Protestan', label: 'Protestan' },
+				{ kode: 'Hindu', label: 'Hindu' },
+				{ kode: 'Budha', label: 'Budha' }
+			]);
+
+			//Pil Hobi
+			worksheetHobi.columns = [
+				{ header: "KODE", key: "kode", width: 10 },
+				{ header: "LABEL", key: "label", width: 50 }
+			];
+			const figureColumnsHobi = [1, 2];
+			figureColumnsHobi.forEach((i) => {
+				worksheetHobi.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheetHobi.addRows([
+				{ kode: '1', label: 'Olahraga' },
+				{ kode: '2', label: 'Kesenian' },
+				{ kode: '3', label: 'Membaca' },
+				{ kode: '4', label: 'Menulis' },
+				{ kode: '5', label: 'Traveling' },
+				{ kode: '6', label: 'Lainnya' },
+			]);
+
+			//Pil CitaCita
+			worksheetCitaCita.columns = [
+				{ header: "KODE", key: "kode", width: 10 },
+				{ header: "LABEL", key: "label", width: 50 }
+			];
+			const figureColumnsCitaCita = [1, 2];
+			figureColumnsCitaCita.forEach((i) => {
+				worksheetCitaCita.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheetCitaCita.addRows([
+				{ kode: '1', label: 'PNS' },
+				{ kode: '2', label: 'TNI/PORLI' },
+				{ kode: '3', label: 'Guru/Dosen' },
+				{ kode: '4', label: 'Dokter' },
+				{ kode: '5', label: 'Politikus' },
+				{ kode: '6', label: 'Wiraswasta' },
+				{ kode: '7', label: 'Pekerja Seni/Lukis/Artis/Sejenis' },
+				{ kode: '8', label: 'Lainnya' },
+			]);
+
+			//Pil JenjangSekolah
+			worksheetJenjangSekolah.columns = [
+				{ header: "KODE", key: "kode", width: 10 },
+				{ header: "LABEL", key: "label", width: 50 }
+			];
+			const figureColumnsJenjangSekolah = [1, 2];
+			figureColumnsJenjangSekolah.forEach((i) => {
+				worksheetJenjangSekolah.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheetJenjangSekolah.addRows([
+				{ kode: '1', label: 'MI' },
+				{ kode: '2', label: 'SD' },
+				{ kode: '3', label: 'SD Terbuka' },
+				{ kode: '4', label: 'SLB-MI' },
+				{ kode: '5', label: 'Paket A' },
+				{ kode: '6', label: 'Salafiyah Ula' },
+				{ kode: '7', label: 'MU`adalah MI' },
+				{ kode: '8', label: 'SLB-SD' },
+				{ kode: '9', label: 'Lainnya' },
+			]);
+
+			//Pil StatusSekolah
+			worksheetStatusSekolah.columns = [
+				{ header: "KODE", key: "kode", width: 10 },
+				{ header: "LABEL", key: "label", width: 50 }
+			];
+			const figureColumnsStatusSekolah = [1, 2];
+			figureColumnsStatusSekolah.forEach((i) => {
+				worksheetStatusSekolah.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheetStatusSekolah.addRows([
+				{ kode: '1', label: 'Negeri' },
+				{ kode: '2', label: 'Swasta' },
+			]);
+
+			//Pil StatusOrangTua
+			worksheetStatusOrangTua.columns = [
+				{ header: "KODE", key: "kode", width: 10 },
+				{ header: "LABEL", key: "label", width: 50 }
+			];
+			const figureColumnsStatusOrangTua = [1, 2];
+			figureColumnsStatusOrangTua.forEach((i) => {
+				worksheetStatusOrangTua.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheetStatusOrangTua.addRows([
+				{ kode: '1', label: 'Masih Hidup' },
+				{ kode: '2', label: 'Sudah Mati' },
+				{ kode: '3', label: 'Tidak Diketahui' },
+			]);
+
+			//Pil Pendidikan
+			worksheetPendidikan.columns = [
+				{ header: "KODE", key: "kode", width: 10 },
+				{ header: "LABEL", key: "label", width: 50 }
+			];
+			const figureColumnsPendidikan = [1, 2];
+			figureColumnsPendidikan.forEach((i) => {
+				worksheetPendidikan.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheetPendidikan.addRows([
+				{ kode: '0', label: 'Tidak Berpendidikan Formal' },
+				{ kode: '1', label: 'SD/Sederajat' },
+				{ kode: '2', label: 'SMP/Sederajat' },
+				{ kode: '3', label: 'SMA/Sederajat' },
+				{ kode: '4', label: 'D1' },
+				{ kode: '5', label: 'D2' },
+				{ kode: '6', label: 'D3' },
+				{ kode: '7', label: 'S1' },
+				{ kode: '8', label: 'S2' },
+				{ kode: '9', label: '>S2' },
+			]);
+
+			//Pil Pekerjaan
+			worksheetPekerjaan.columns = [
+				{ header: "KODE", key: "kode", width: 10 },
+				{ header: "LABEL", key: "label", width: 50 }
+			];
+			const figureColumnsPekerjaan = [1, 2];
+			figureColumnsPekerjaan.forEach((i) => {
+				worksheetPekerjaan.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheetPekerjaan.addRows([
+				{ kode: '1', label: 'Tidak Bekerja' },
+				{ kode: '2', label: 'Pensiunan/Almarhum' },
+				{ kode: '3', label: 'PNS (selain Guru/Dosen/Dokter/Bidan/Perawat)' },
+				{ kode: '4', label: 'TNI/Polisi' },
+				{ kode: '5', label: 'Guru/Dosen' },
+				{ kode: '6', label: 'Pegawai Swasta' },
+				{ kode: '7', label: 'Pengusaha/Wiraswasta' },
+				{ kode: '8', label: 'Pengacara/Hakim/Jaksa/Notaris' },
+				{ kode: '9', label: 'Seniman/Pelukis/Artis/Sejenis' },
+				{ kode: '10', label: 'Dokter/Bidan/Perawat' },
+				{ kode: '11', label: 'Pilot/Pramugari' },
+				{ kode: '12', label: 'Pedagang' },
+				{ kode: '13', label: 'Petani/Peternak' },
+				{ kode: '14', label: 'Nelayan' },
+				{ kode: '15', label: 'Buruh (Tani/Pabrik/Bangunan)' },
+				{ kode: '16', label: 'Sopir/Masinis/Kondektur' },
+				{ kode: '17', label: 'Politikus' },
+				{ kode: '18', label: 'Lainnya' },
+			]);
+
+			//Pil StatusTempatTinggal
+			worksheetStatusTempatTinggal.columns = [
+				{ header: "KODE", key: "kode", width: 10 },
+				{ header: "LABEL", key: "label", width: 50 }
+			];
+			const figureColumnsStatusTempatTinggal = [1, 2];
+			figureColumnsStatusTempatTinggal.forEach((i) => {
+				worksheetStatusTempatTinggal.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheetStatusTempatTinggal.addRows([
+				{ kode: '1', label: 'Milik' },
+				{ kode: '2', label: 'Rumah Orangtua' },
+				{ kode: '3', label: 'Rumah Saudara/Kerabat' },
+				{ kode: '4', label: 'Rumah Dinas' },
+			]);
+
+			//Pil JarakRumah
+			worksheetJarakRumah.columns = [
+				{ header: "KODE", key: "kode", width: 10 },
+				{ header: "LABEL", key: "label", width: 50 }
+			];
+			const figureColumnsJarakRumah = [1, 2];
+			figureColumnsJarakRumah.forEach((i) => {
+				worksheetJarakRumah.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheetJarakRumah.addRows([
+				{ kode: '1', label: '< 1 Km' },
+				{ kode: '2', label: '1 - 3 Km' },
+				{ kode: '3', label: '3 - 5 Km' },
+				{ kode: '4', label: '5 - 10 Km' },
+				{ kode: '5', label: '> 10 Km' },
+			]);
+
+			//Pil AlatTransportasi
+			worksheetAlatTransportasi.columns = [
+				{ header: "KODE", key: "kode", width: 10 },
+				{ header: "LABEL", key: "label", width: 50 }
+			];
+			const figureColumnsAlatTransportasi = [1, 2];
+			figureColumnsAlatTransportasi.forEach((i) => {
+				worksheetAlatTransportasi.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheetAlatTransportasi.addRows([
+				{ kode: '1', label: 'Jalan Kaki' },
+				{ kode: '2', label: 'Sepeda' },
+				{ kode: '3', label: 'Sepeda Motor' },
+				{ kode: '4', label: 'Mobil Pribadi' },
+				{ kode: '5', label: 'Antar Jemput Sekolah' },
+				{ kode: '6', label: 'Angkutan Umum' },
+				{ kode: '7', label: 'Perahu/Sampan' },
+				{ kode: '8', label: 'Lainnya' },
+			]);
+
+			//Pil Penghasilan
+			worksheetPenghasilan.columns = [
+				{ header: "KODE", key: "kode", width: 10 },
+				{ header: "LABEL", key: "label", width: 50 }
+			];
+			const figureColumnsPenghasilan = [1, 2];
+			figureColumnsPenghasilan.forEach((i) => {
+				worksheetPenghasilan.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheetPenghasilan.addRows([
+				{ kode: '1', label: '<= Rp 500.000' },
+				{ kode: '2', label: 'Rp 500.001 - Rp 1.000.000' },
+				{ kode: '3', label: 'Rp 1.000.001 - Rp 2.000.000' },
+				{ kode: '4', label: 'Rp 2.000.001 - Rp 3.000.000' },
+				{ kode: '5', label: 'Rp 3.000.001 - Rp 5.000.000' },
+				{ kode: '6', label: '> Rp 5.000.000' },
+			]);
+
+			res.setHeader(
+				"Content-Disposition",
+				"attachment; filename=TemplateDataSiswa.xlsx"
+			);
+		}else if(roleid === '2'){
+			let worksheet = workbook.addWorksheet("Data Guru");
+			let worksheetAgama = workbook.addWorksheet("Agama");
+			let worksheetPendidikan = workbook.addWorksheet("Pendidikan");
+			let worksheetJabatan = workbook.addWorksheet("Jabatan");
+			let worksheetBidangMengajar = workbook.addWorksheet("Bidang Mengajar");
+
+			//Data Guru
+			worksheet.columns = [
+				{ header: "NAMA", key: "name", width: 20 },
+				{ header: "EMAIL", key: "email", width: 20 },
+				{ header: "TANGGAL LAHIR", key: "tgl_lahir", width: 20 },
+				{ header: "TEMPAT", key: "tempat", width: 20 },
+				{ header: "JENIS KELAMIN", key: "jeniskelamin", width: 20 },
+				{ header: "AGAMA", key: "agama", width: 20 },
+				{ header: "PENDIDIKAN TERAKHIR", key: "pendidikan_guru", width: 25 },
+				{ header: "JABATAN", key: "jabatan_guru", width: 20 },
+				{ header: "MENGAJAR BIDANG", key: "mengajar_bidang", width: 20 },
+				{ header: "MENGAJAR KELAS", key: "mengajar_kelas", width: 20 },
+				{ header: "TELEPON", key: "telp", width: 20 },
+				{ header: "ALAMAT", key: "alamat", width: 40 },
+				{ header: "PROVINSI", key: "provinsi", width: 20 },
+				{ header: "KABUPATEN / KOTA", key: "kabkota", width: 20 },
+				{ header: "KECAMATAN", key: "kecamatan", width: 20 },
+				{ header: "KELURAHAN", key: "kelurahan", width: 20 },
+				{ header: "KODE POS", key: "kode_pos", width: 20 },
+			];
+			const figureColumns = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
+			figureColumns.forEach((i) => {
+				worksheet.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheet.addRows(result);
+
+			//Pil Agama
+			worksheetAgama.columns = [
+				{ header: "KODE", key: "kode", width: 15 },
+				{ header: "LABEL", key: "label", width: 15 }
+			];
+			const figureColumnsAgama = [1, 2];
+			figureColumnsAgama.forEach((i) => {
+				worksheetAgama.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheetAgama.addRows([
+				{ kode: 'Islam', label: 'Islam' },
+				{ kode: 'Katolik', label: 'Katolik' },
+				{ kode: 'Protestan', label: 'Protestan' },
+				{ kode: 'Hindu', label: 'Hindu' },
+				{ kode: 'Budha', label: 'Budha' }
+			]);
+
+			//Pil Pendidikan
+			worksheetPendidikan.columns = [
+				{ header: "KODE", key: "kode", width: 10 },
+				{ header: "LABEL", key: "label", width: 50 }
+			];
+			const figureColumnsPendidikan = [1, 2];
+			figureColumnsPendidikan.forEach((i) => {
+				worksheetPendidikan.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheetPendidikan.addRows([
+				{ kode: '0', label: 'Tidak Berpendidikan Formal' },
+				{ kode: '1', label: 'SD/Sederajat' },
+				{ kode: '2', label: 'SMP/Sederajat' },
+				{ kode: '3', label: 'SMA/Sederajat' },
+				{ kode: '4', label: 'D1' },
+				{ kode: '5', label: 'D2' },
+				{ kode: '6', label: 'D3' },
+				{ kode: '7', label: 'S1' },
+				{ kode: '8', label: 'S2' },
+				{ kode: '9', label: '>S2' },
+			]);
+
+			//Pil Jabatan
+			worksheetJabatan.columns = [
+				{ header: "KODE", key: "kode", width: 30 },
+				{ header: "LABEL", key: "label", width: 30 }
+			];
+			const figureColumnsJabatan = [1, 2];
+			figureColumnsJabatan.forEach((i) => {
+				worksheetJabatan.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheetJabatan.addRows([
+				{ kode: 'Kepala Sekolah', label: 'Kepala Sekolah' },
+				{ kode: 'WaKaBid. Kesiswaan', label: 'WaKaBid. Kesiswaan' },
+				{ kode: 'WaKaBid. Kurikulum', label: 'WaKaBid. Kurikulum' },
+				{ kode: 'WaKaBid. Sarpras', label: 'WaKaBid. Sarpras' },
+				{ kode: 'Kepala TU', label: 'Kepala TU' },
+				{ kode: 'Staff TU', label: 'Staff TU' },
+				{ kode: 'Wali Kelas', label: 'Wali Kelas' },
+				{ kode: 'BP / BK', label: 'BP / BK' },
+				{ kode: 'Pembina Osis', label: 'Pembina Osis' },
+				{ kode: 'Pembina Extrakurikuler', label: 'Pembina Extrakurikuler' },
+				{ kode: 'Kebersihan', label: 'Kebersihan' },
+			]);
+
+			//Pil Bidang Mengajar
+			worksheetBidangMengajar.columns = [
+				{ header: "KODE", key: "kode", width: 30 },
+				{ header: "LABEL", key: "label", width: 30 }
+			];
+			const figureColumnsBidangworksheetBidangMengajar = [1, 2];
+			figureColumnsBidangworksheetBidangMengajar.forEach((i) => {
+				worksheetBidangMengajar.getColumn(i).alignment = { horizontal: "left" };
+			});
+			worksheetBidangMengajar.addRows([
+				{ kode: 'Alquran Hadits', label: 'Alquran Hadits' },
+				{ kode: 'Aqidah Akhlak', label: 'Aqidah Akhlak' },
+				{ kode: 'Bahasa Arab', label: 'Bahasa Arab' },
+				{ kode: 'Bahasa Indonesia', label: 'Bahasa Indonesia' },
+				{ kode: 'Bahasa Inggris', label: 'Bahasa Inggris' },
+				{ kode: 'Bahasa Sunda', label: 'Bahasa Sunda' },
+				{ kode: 'Fiqih', label: 'Fiqih' },
+				{ kode: 'IPA Terpadu', label: 'IPA Terpadu' },
+				{ kode: 'IPS Terpadu', label: 'IPS Terpadu' },
+				{ kode: 'Matematika', label: 'Matematika' },
+				{ kode: 'Penjasorkes', label: 'Penjasorkes' },
+				{ kode: 'PKN', label: 'PKN' },
+				{ kode: 'Prakarya', label: 'Prakarya' },
+				{ kode: 'Seni Budaya', label: 'Seni Budaya' },
+				{ kode: 'SKI', label: 'SKI' },
+			]);
+
+			res.setHeader(
+				"Content-Disposition",
+				"attachment; filename=TemplateDataGuru.xlsx"
+			);
+		}
+
+		res.setHeader(
+			"Content-Type",
+			"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+		);
+	
+		return workbook.xlsx.write(res).then(function () {
+			res.status(200).end();
+		});
+    });
+}
+
+const getKelas = (res, statementCheck) => {
+    // jalankan query
+    koneksi.query(statementCheck, (err, result, field) => {
+        // error handling
+        if (err) {
+            return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+        }
+		kode = 200
+		message = 'Berhasil'
+		response(res, { kode, message, data: result }, 200);
+    });
+};
+
+const ambilKelas = (res, statementCheck, statementUserdDetails, data) => {
+    // jalankan query
+    koneksi.query(statementCheck, data.id, (err, result, field) => {
+        // error handling
+        if (err) {
+            return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+        }
+        if(result.length){
+			const kirimData = {
+				kelas: data.kelas,
+			}
+			koneksi.query(statementUserdDetails, [kirimData, data.id], (err, result2, field) => {
+				// error handling
+				if (err) {
+					return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+				}			
+				koneksi.query(statementCheck, data.id, (err, dataterakhir, field) => {
+					// error handling
+					if (err) {
+						return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+					}
+					kode = 200
+					message = 'Berhasil mengambil kelas'
+					response(res, { kode, message, data: dataterakhir[0]}, 200);
+				});
+			});
+        }else{
+            return response(res, { kode: '404', message: 'Data tidak ditemukan' }, 404);
+        }
+    });
+};
+
 module.exports = {
     getUsers,
     createupdateUsers,
@@ -498,4 +1645,10 @@ module.exports = {
     getKabKota,
     getKecamatan,
     getKelDesa,
+    updateBerkas,
+    downloadexcel,
+    importData,
+    exportexcel,
+    getKelas,
+    ambilKelas,
 }

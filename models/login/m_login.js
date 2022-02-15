@@ -273,9 +273,9 @@ const postImageUser = (res, statementCheck, data) => {
     });
 };
 
-const updateUser = (res, statement, statementCheck, data) => {
+const updateUser = (res, statement, statement2, statementCheck, data) => {
     // jalankan query
-		let kirimData;
+	let kirimData;
     koneksi.query(statementCheck, data.id, async(err, result, field) => {
         // error handling
         if (err) {
@@ -315,6 +315,26 @@ const updateUser = (res, statement, statementCheck, data) => {
                     gambarGmail: null,
                     kodeOTP: data.passwordbaru
                 }
+            }else if(data.ubah === 'datapribadi'){
+                kirimData = {
+                    email: data.email
+                }
+
+                const kirimData2 = {
+                    telp: data.telp,
+                    alamat: data.alamat,
+                    provinsi: data.provinsi,
+                    kabkota: data.kabkota,
+                    kecamatan: data.kecamatan,
+                    kelurahan: data.kelurahan,
+                    kode_pos: data.kode_pos,
+                }
+                koneksi.query(statement2, [kirimData2, data.id], (err, result, field) => {
+                    // error handling
+                    if (err) {
+                        return response(res, { kode: '500', message: 'Gagal', error: err }, 500);
+                    }
+                });
             }
             koneksi.query(statement, [kirimData, data.id], (err, result, field) => {
                 // error handling

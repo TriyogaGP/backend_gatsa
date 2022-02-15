@@ -12,7 +12,15 @@ const readData = (req, res) => {
 
 const readDataByID = (req, res) => {
     // buat query sql
-    const querySql = 'SELECT a.*, b.*, c.roleName FROM users AS a INNER JOIN users_details AS b ON a.id=b.id_profile INNER JOIN roleUsers AS c ON a.roleID=c.id WHERE a.id = ?';
+    const querySql = `SELECT a.*, b.*, c.roleName, d.nama as nama_provinsi, e.nama as nama_kabkota, f.nama as nama_kecamatan, g.nama as nama_kelurahan
+    FROM users AS a 
+    INNER JOIN users_details AS b ON a.id=b.id_profile 
+    INNER JOIN roleUsers AS c ON a.roleID=c.id 
+    INNER JOIN wilayah AS d ON b.provinsi=d.kode
+    INNER JOIN wilayah AS e ON b.kabkota=e.kode
+    INNER JOIN wilayah AS f ON b.kecamatan=f.kode
+    INNER JOIN wilayah AS g ON b.kelurahan=g.kode
+    WHERE a.id = ?`;
     
     // masukkan ke dalam model
     m_login.getUsersBy(res, querySql, req.params.id);
@@ -96,10 +104,11 @@ const updateData = (req, res) => {
     // buat variabel penampung data dan query sql
     const data = { ...req.body };
     const queryCheck = 'SELECT * FROM users WHERE id = ?';
-    const querySql = 'UPDATE users SET ? WHERE id = ?';
+    const querySqlUsers = 'UPDATE users SET ? WHERE id = ?';
+    const querySqlUsersDetails = 'UPDATE users_details SET ? WHERE id_profile = ?';
     
     // masukkan ke dalam model
-    m_login.updateUser(res, querySql, queryCheck, data);
+    m_login.updateUser(res, querySqlUsers, querySqlUsersDetails, queryCheck, data);
 };
 
 const logout = (req, res) => {
