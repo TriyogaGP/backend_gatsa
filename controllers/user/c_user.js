@@ -11,12 +11,20 @@ function convertDate(str) {
 	return valueConvert
 }
 
+const dataDashboard = (req, res) => {
+    // buat query sql
+    const querySql = `SELECT a.*, b.* FROM users AS a INNER JOIN users_details AS b ON a.id = b.id_profile WHERE a.roleID != 1`;
+
+    // masukkan ke dalam model
+    m_user.dataDashboard(res, querySql);
+};
+
 const readData = (req, res) => {
     // buat query sql
-    const querySql = `SELECT a.id, a.roleID, a.name, a.email, a.password, a.gambar, a.gambarGmail, a.codeLog, a.kodeOTP, a.activeAkun, 
+    const querySql = `SELECT a.id, a.roleID, a.name, a.email, a.password, a.gambar, a.gambarGmail, a.codeLog, a.kodeOTP, a.activeAkun, a.validasiAkun, a.mutationAkun,
     DATE_FORMAT(a.createdAt,'%Y-%m-%d') AS createdAt, DATE_FORMAT(a.updatedAt,'%Y-%m-%d') AS updatedAt, b.roleName, 
     c.*, d.nama as nama_provinsi, e.nama as nama_kabkota, f.nama as nama_kecamatan, g.nama as nama_kelurahan, h.nama as nama_kabkot_sekolah, ROW_NUMBER() OVER(ORDER BY a.id ASC) AS item_no FROM users AS a 
-    INNER JOIN roleUsers AS b ON a.roleID=b.id 
+    INNER JOIN roleusers AS b ON a.roleID=b.id 
     INNER JOIN users_details AS c ON a.id=c.id_profile
     INNER JOIN wilayah AS d ON c.provinsi=d.kode
     INNER JOIN wilayah AS e ON c.kabkota=e.kode
@@ -210,10 +218,10 @@ const updateBerkas = (req, res) => {
     const { body, files } = req;
     const namaFile = files[0].filename;
     const data = { ...body, namaFile };
-    const queryCheck = `SELECT a.id, a.roleID, a.name, a.email, a.password, a.gambar, a.gambarGmail, a.codeLog, a.kodeOTP, a.activeAkun, 
+    const queryCheck = `SELECT a.id, a.roleID, a.name, a.email, a.password, a.gambar, a.gambarGmail, a.codeLog, a.kodeOTP, a.activeAkun, a.validasiAkun, a.mutationAkun,
     DATE_FORMAT(a.createdAt,'%Y-%m-%d') AS createdAt, DATE_FORMAT(a.updatedAt,'%Y-%m-%d') AS updatedAt, b.roleName, 
     c.*, d.nama as nama_provinsi, e.nama as nama_kabkota, f.nama as nama_kecamatan, g.nama as nama_kelurahan, h.nama as nama_kabkot_sekolah, ROW_NUMBER() OVER(ORDER BY a.id ASC) AS item_no FROM users AS a 
-    INNER JOIN roleUsers AS b ON a.roleID=b.id 
+    INNER JOIN roleusers AS b ON a.roleID=b.id 
     INNER JOIN users_details AS c ON a.id=c.id_profile
     INNER JOIN wilayah AS d ON c.provinsi=d.kode
     INNER JOIN wilayah AS e ON c.kabkota=e.kode
@@ -227,36 +235,38 @@ const updateBerkas = (req, res) => {
 
 const exportexcel = (req, res) => {
     // buat variabel penampung data dan qursery sql
-    const querySelect = `SELECT a.id, a.roleID, a.name, a.email, a.password, a.gambar, a.gambarGmail, a.codeLog, a.kodeOTP, a.activeAkun, 
+    const querySelect = `SELECT a.id, a.roleID, a.name, a.email, a.password, a.gambar, a.gambarGmail, a.codeLog, a.kodeOTP, a.activeAkun, a.validasiAkun, a.mutationAkun, 
     DATE_FORMAT(a.createdAt,'%Y-%m-%d') AS createdAt, DATE_FORMAT(a.updatedAt,'%Y-%m-%d') AS updatedAt, b.roleName, 
     c.*, d.nama as nama_provinsi, e.nama as nama_kabkota, f.nama as nama_kecamatan, g.nama as nama_kelurahan, h.nama as nama_kabkot_sekolah, ROW_NUMBER() OVER(ORDER BY a.id ASC) AS item_no FROM users AS a 
-    INNER JOIN roleUsers AS b ON a.roleID=b.id 
+    INNER JOIN roleusers AS b ON a.roleID=b.id 
     INNER JOIN users_details AS c ON a.id=c.id_profile
     INNER JOIN wilayah AS d ON c.provinsi=d.kode
     INNER JOIN wilayah AS e ON c.kabkota=e.kode
     INNER JOIN wilayah AS f ON c.kecamatan=f.kode
     INNER JOIN wilayah AS g ON c.kelurahan=g.kode
     INNER JOIN wilayah AS h ON c.kabkota=h.kode
-    WHERE a.roleID = ? ORDER BY item_no asc`;
+    WHERE a.roleID = ? OR c.kelas = ? ORDER BY item_no asc`;
 
-    m_user.exportexcel(res, querySelect, req.params.roleid);
+    m_user.exportexcel(res, querySelect, req.params.cari, req.query);
 }
 
 const getkelas = (req, res) => {
     // buat variabel penampung data dan query sql
-    const queryCheck = `SELECT CONCAT_WS('-', kelas, number) as value, CONCAT_WS('-', kelas, number) as label FROM kelas ORDER BY id_kelas`;
+    const data = { ...req.query };
+    const queryCheck = data.kelas === "ALL" ? `SELECT CONCAT_WS('-', kelas, number) as value, CONCAT_WS('-', kelas, number) as label FROM kelas WHERE activeKelas = 1 ORDER BY id_kelas`
+                        : `SELECT CONCAT_WS('-', kelas, number) as value, CONCAT_WS('-', kelas, number) as label FROM kelas WHERE kelas = ? && activeKelas = 1 ORDER BY id_kelas`;
     
     // masukkan ke dalam model
-    m_user.getKelas(res, queryCheck);
+    m_user.getKelas(res, queryCheck, data);
 };
 
 const ambilKelas = (req, res) => {
     // buat variabel penampung data dan query sql
     const data = { ...req.body };
-    const queryCheck = `SELECT a.id, a.roleID, a.name, a.email, a.password, a.gambar, a.gambarGmail, a.codeLog, a.kodeOTP, a.activeAkun, 
+    const queryCheck = `SELECT a.id, a.roleID, a.name, a.email, a.password, a.gambar, a.gambarGmail, a.codeLog, a.kodeOTP, a.activeAkun, a.validasiAkun, a.mutationAkun, 
     DATE_FORMAT(a.createdAt,'%Y-%m-%d') AS createdAt, DATE_FORMAT(a.updatedAt,'%Y-%m-%d') AS updatedAt, b.roleName, 
     c.*, d.nama as nama_provinsi, e.nama as nama_kabkota, f.nama as nama_kecamatan, g.nama as nama_kelurahan, h.nama as nama_kabkot_sekolah, ROW_NUMBER() OVER(ORDER BY a.id ASC) AS item_no FROM users AS a 
-    INNER JOIN roleUsers AS b ON a.roleID=b.id 
+    INNER JOIN roleusers AS b ON a.roleID=b.id 
     INNER JOIN users_details AS c ON a.id=c.id_profile
     INNER JOIN wilayah AS d ON c.provinsi=d.kode
     INNER JOIN wilayah AS e ON c.kabkota=e.kode
@@ -270,7 +280,44 @@ const ambilKelas = (req, res) => {
     m_user.ambilKelas(res, queryCheck, querySqlUsersDetails, data);
 };
 
+const detailUserPDF = (req, res) => {
+    // buat variabel penampung data dan query sql
+    const queryCheck = `SELECT a.id, a.roleID, a.name, a.email, a.password, a.gambar, a.gambarGmail, a.codeLog, a.kodeOTP, a.activeAkun, a.validasiAkun, a.mutationAkun, 
+    DATE_FORMAT(a.createdAt,'%Y-%m-%d') AS createdAt, DATE_FORMAT(a.updatedAt,'%Y-%m-%d') AS updatedAt, b.roleName, 
+    c.*, d.nama as nama_provinsi, e.nama as nama_kabkota, f.nama as nama_kecamatan, g.nama as nama_kelurahan, h.nama as nama_kabkot_sekolah, ROW_NUMBER() OVER(ORDER BY a.id ASC) AS item_no FROM users AS a 
+    INNER JOIN roleusers AS b ON a.roleID=b.id 
+    INNER JOIN users_details AS c ON a.id=c.id_profile
+    INNER JOIN wilayah AS d ON c.provinsi=d.kode
+    INNER JOIN wilayah AS e ON c.kabkota=e.kode
+    INNER JOIN wilayah AS f ON c.kecamatan=f.kode
+    INNER JOIN wilayah AS g ON c.kelurahan=g.kode
+    INNER JOIN wilayah AS h ON c.kabkota=h.kode
+    WHERE a.id = ?`;
+    
+    // // masukkan ke dalam model
+    m_user.detailUserPDF(res, queryCheck, req.params.id);
+};
+
+const kelasSiswa = (req, res) => {
+    // buat variabel penampung data dan query sql
+    const querySql = `SELECT a.id, a.roleID, a.name, a.email, a.password, a.gambar, a.gambarGmail, a.codeLog, a.kodeOTP, a.activeAkun, a.validasiAkun, a.mutationAkun,
+    DATE_FORMAT(a.createdAt,'%Y-%m-%d') AS createdAt, DATE_FORMAT(a.updatedAt,'%Y-%m-%d') AS updatedAt, b.roleName, 
+    c.*, d.nama as nama_provinsi, e.nama as nama_kabkota, f.nama as nama_kecamatan, g.nama as nama_kelurahan, h.nama as nama_kabkot_sekolah, ROW_NUMBER() OVER(ORDER BY a.id ASC) AS item_no FROM users AS a 
+    INNER JOIN roleusers AS b ON a.roleID=b.id 
+    INNER JOIN users_details AS c ON a.id=c.id_profile
+    INNER JOIN wilayah AS d ON c.provinsi=d.kode
+    INNER JOIN wilayah AS e ON c.kabkota=e.kode
+    INNER JOIN wilayah AS f ON c.kecamatan=f.kode
+    INNER JOIN wilayah AS g ON c.kelurahan=g.kode
+    INNER JOIN wilayah AS h ON c.kabkota=h.kode
+    WHERE a.activeAkun = 1 && a.mutationAkun = 0 && c.kelas = ? ORDER BY item_no asc`;
+
+    // masukkan ke dalam model
+    m_user.kelasSiswa(res, querySql, req.params.kelas);
+};
+
 module.exports = {
+    dataDashboard,
     readData,
     createupdateData,
     updateDataBY,
@@ -288,4 +335,6 @@ module.exports = {
     exportexcel,
     getkelas,
     ambilKelas,
+    detailUserPDF,
+    kelasSiswa,
 }

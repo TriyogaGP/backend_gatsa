@@ -4,6 +4,11 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const nodemailer = require('nodemailer');
 const excel = require("exceljs");
+const ejs = require("ejs");
+const pdf = require("html-pdf");
+const path = require("path");
+const dotenv = require('dotenv');
+dotenv.config();
 
 function makeRandom(n) {
 	let result = '';
@@ -14,6 +19,45 @@ function makeRandom(n) {
    	}
    	return result;
 }
+
+function UpperFirstLetter(str) {
+	return str.split(' ').map(i => i[0].toUpperCase() + i.substring(1).toLowerCase()).join(' ')
+}
+
+function dateconvert(str) {
+	const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+	const date = new Date(str);
+    const mnth = bulan[date.getMonth()];
+    const day = ("0" + date.getDate()).slice(-2);
+  	const valueConvert = [day, mnth, date.getFullYear()].join(" ")
+	return valueConvert
+}
+
+const dataDashboard = (res, statement) => {
+    // jalankan query
+	koneksi.query(statement, (err, result, field) => {
+        // error handling
+        if (err) {
+            return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+        }
+		dataSiswaPria = result.filter((el) => el.roleID === 3 && el.activeAkun === 1 && el.mutationAkun === 0 && el.jeniskelamin === "Laki - Laki").length
+		dataSiswaWanita = result.filter((el) => el.roleID === 3 && el.activeAkun === 1 && el.mutationAkun === 0 && el.jeniskelamin === "Perempuan").length
+		dataSiswaMutasi = result.filter((el) => el.roleID === 3 && (el.activeAkun === 1 || el.activeAkun === 0) && el.mutationAkun === 1).length
+		dataGuru = result.filter((el) => el.roleID === 2 && el.activeAkun === 1).length
+        // console.log(dataSiswaPria, dataSiswaWanita, dataSiswaMutasi, dataGuru)
+		const dataDashboard = {
+			dataSiswaPria: dataSiswaPria,
+			dataSiswaWanita: dataSiswaWanita,
+			dataSiswaMutasi: dataSiswaMutasi,
+			dataGuru: dataGuru
+		}
+        // jika request berhasil
+        kode = 200
+        message = 'Berhasil'
+        response(res, { kode, message, totalData: dataDashboard }, 200);
+    });
+};
+
 const getUsers = (res, statement, params) => {
     // jalankan query
 	koneksi.query(statement, [params.idRole, params.idProfile], (err, result, field) => {
@@ -122,6 +166,7 @@ const createupdateUsers = (res, statementCheck1, statementCheck2, Usersstatement
 							jabatan_guru: data.roleID === '2' ? data.jabatan_guru : null,
 							mengajar_bidang: data.roleID === '2' ? data.mengajar_bidang : null,
 							mengajar_kelas: data.roleID === '2' ? data.mengajar_kelas : null,
+							walikelas: data.roleID === '2' ? data.walikelas : null,
 						}
 						// jika request berhasil
 						koneksi.query(Usersdetailsstatement, kirimdata2, (err, result, field) => {
@@ -137,19 +182,20 @@ const createupdateUsers = (res, statementCheck1, statementCheck2, Usersstatement
 									pass: 'Yoga17051993'
 								}
 							});
-				
+
 							var mailOptions = {
-								from: 'triyoga.ginanjar.p@gmail.com',
+								from: process.env.EMAIL,
 								to: data.email,
 								subject: 'Konfirmasi Pendaftaran Akun',
 								// text: `Silahkan masukan kode verifikasi akun tersebut`
 								html: `<h1>Konfirmasi Pendataran Akun</h1>
 								<ul>
+									${data.roleID !== 1 && `<li>Nomor Induk ${data.roleID === 2 ? 'Pegawai' : 'Siswa' } : ${data.nomor_induk}</li>`}
 									<li>Nama Lengkap : ${data.name}</li>
 									<li>Alamat Email : ${data.email}</li>
 									<li>Kata Sandi : ${data.password}</li>
 								</ul>
-								Ikuti tautan ini untuk mengonfirmasi pendaftaran Anda:<br>
+								Harap informasi ini jangan di hapus karena informasi ini penting adanya, dan klik tautan ini untuk mengonfirmasi pendaftaran Anda:<br>
 								<a href="http://localhost:5000/restApi/moduleUser/verifikasi/${data.password}/1">konfirmasi akun</a><br>Jika Anda memiliki pertanyaan, silakan balas email ini`
 							};
 	
@@ -249,6 +295,7 @@ const createupdateUsers = (res, statementCheck1, statementCheck2, Usersstatement
 						jabatan_guru: data.roleID === '2' ? data.jabatan_guru : null,
 						mengajar_bidang: data.roleID === '2' ? data.mengajar_bidang : null,
 						mengajar_kelas: data.roleID === '2' ? data.mengajar_kelas : null,
+						walikelas: data.roleID === '2' ? data.walikelas : null,
 					}
 		
 					// jika request berhasil
@@ -268,17 +315,18 @@ const createupdateUsers = (res, statementCheck1, statementCheck2, Usersstatement
 						});
 			
 						var mailOptions = {
-							from: 'triyoga.ginanjar.p@gmail.com',
+							from: process.env.EMAIL,
 							to: data.email,
 							subject: 'Konfirmasi Pendaftaran Akun',
 							// text: `Silahkan masukan kode verifikasi akun tersebut`
 							html: `<h1>Konfirmasi Pendataran Akun</h1>
 							<ul>
+								${data.roleID !== 1 && `<li>Nomor Induk ${data.roleID === '2' ? 'Pegawai' : 'Siswa' } : ${data.nomor_induk}</li>`}
 								<li>Nama Lengkap : ${data.name}</li>
 								<li>Alamat Email : ${data.email}</li>
 								<li>Kata Sandi : ${kondisipassbaru}</li>
 							</ul>
-							Ikuti tautan ini untuk mengonfirmasi pendaftaran Anda:<br>
+							Harap informasi ini jangan di hapus karena informasi ini penting adanya, dan klik tautan ini untuk mengonfirmasi pendaftaran Anda:<br>
 							<a href="http://localhost:5000/restApi/moduleUser/verifikasi/${kodeverifikasi}/1">konfirmasi akun</a><br>Jika Anda memiliki pertanyaan, silakan balas email ini`
 						};
 
@@ -316,6 +364,18 @@ const updateUserBY = (res, statement, statementCheck, data) => {
 							activeAkun: data.activeAkun
 						}
 						pesan = data.activeAkun === '0' ? 'Berhasil mengubah aktif akun menjadi tidak aktif' : 'Berhasil mengubah aktif akun menjadi aktif'
+					break;
+				case 'validasiAkun' :
+						kirimData = {
+							validasiAkun: data.validasiAkun
+						}
+						pesan = data.validasiAkun === '0' ? 'Berhasil mengubah data akun menjadi tidak tervalidasi' : 'Berhasil mengubah data akun menjadi tervalidasi'
+					break;
+				case 'mutationAkun' :
+						kirimData = {
+							mutationAkun: data.mutationAkun
+						}
+						pesan = data.mutationAkun === '0' ? 'Berhasil mengubah data akun menjadi tidak di mutasi' : 'Berhasil mengubah data akun menjadi di mutasi'
 					break;
 				default:
 					console.log('Error')
@@ -1143,15 +1203,21 @@ const importData = async(res, checkData, InsertUsers, InsertUsersDetails, data) 
 	response(res, { kode, message }, 200);
 }
 
-const exportexcel = (res, Select, roleid) => {
-	koneksi.query(Select, roleid, (err, result, field) => {
+const exportexcel = (res, Select, cari, kategori) => {
+	// jalankan query
+	const cariData = {
+		roleid: kategori.export === 'dariAdmin' ? cari : null, 
+		kelas: kategori.export === 'dariAdmin' ? null : cari, 
+		cetak: kategori.export === 'dariAdmin' ? cari : '3'
+	}
+	koneksi.query(Select, [cariData.roleid, cariData.kelas], (err, result, field) => {
         // error handling
         if (err) {
             return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
         }
 
 		let workbook = new excel.Workbook();
-		if(roleid === '3'){
+		if(cariData.cetak === '3'){
 			let worksheet = workbook.addWorksheet("Data Siswa");
 			let worksheetAgama = workbook.addWorksheet("Agama");
 			let worksheetHobi = workbook.addWorksheet("Hobi");
@@ -1449,7 +1515,7 @@ const exportexcel = (res, Select, roleid) => {
 				"Content-Disposition",
 				"attachment; filename=TemplateDataSiswa.xlsx"
 			);
-		}else if(roleid === '2'){
+		}else if(cariData.cetak === '2'){
 			let worksheet = workbook.addWorksheet("Data Guru");
 			let worksheetAgama = workbook.addWorksheet("Agama");
 			let worksheetPendidikan = workbook.addWorksheet("Pendidikan");
@@ -1585,12 +1651,12 @@ const exportexcel = (res, Select, roleid) => {
 		return workbook.xlsx.write(res).then(function () {
 			res.status(200).end();
 		});
-    });
+    });	
 }
 
-const getKelas = (res, statementCheck) => {
+const getKelas = (res, statementCheck, data) => {
     // jalankan query
-    koneksi.query(statementCheck, (err, result, field) => {
+    koneksi.query(statementCheck, data.kelas !== "ALL" ? data.kelas : '', (err, result, field) => {
         // error handling
         if (err) {
             return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
@@ -1633,7 +1699,237 @@ const ambilKelas = (res, statementCheck, statementUserdDetails, data) => {
     });
 };
 
+const detailUserPDF = (res, statementCheck, id) => {
+    // jalankan query
+    koneksi.query(statementCheck, id, async(err, result, field) => {
+        // error handling
+        if (err) {
+            return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+        }
+		const optionsAgama = [
+			{ value: 'Islam', label: 'Islam' },
+			{ value: 'Katolik', label: 'Katolik' },
+			{ value: 'Protestan', label: 'Protestan' },
+			{ value: 'Hindu', label: 'Hindu' },
+			{ value: 'Budha', label: 'Budha' },
+		]
+	
+		const optionsHobi = [
+			{ value: '1', label: 'Olahraga' },
+			{ value: '2', label: 'Kesenian' },
+			{ value: '3', label: 'Membaca' },
+			{ value: '4', label: 'Menulis' },
+			{ value: '5', label: 'Traveling' },
+			{ value: '6', label: 'Lainnya' },
+		]
+		
+		const optionsCitaCita = [
+			{ value: '1', label: 'PNS' },
+			{ value: '2', label: 'TNI/PORLI' },
+			{ value: '3', label: 'Guru/Dosen' },
+			{ value: '4', label: 'Dokter' },
+			{ value: '5', label: 'Politikus' },
+			{ value: '6', label: 'Wiraswasta' },
+			{ value: '7', label: 'Pekerja Seni/Lukis/Artis/Sejenis' },
+			{ value: '8', label: 'Lainnya' },
+		]
+		
+		const optionsJenjang = [
+			{ value: '1', label: 'MI' },
+			{ value: '2', label: 'SD' },
+			{ value: '3', label: 'SD Terbuka' },
+			{ value: '4', label: 'SLB-MI' },
+			{ value: '5', label: 'Paket A' },
+			{ value: '6', label: 'Salafiyah Ula' },
+			{ value: '7', label: 'MU`adalah MI' },
+			{ value: '8', label: 'SLB-SD' },
+			{ value: '9', label: 'Lainnya' },
+		]
+	
+		const optionsStatusSekolah = [
+			{ value: '1', label: 'Negeri' },
+			{ value: '2', label: 'Swasta' },
+		]
+	
+		const optionsStatusOrtu = [
+			{ value: '1', label: 'Masih Hidup' },
+			{ value: '2', label: 'Sudah Mati' },
+			{ value: '3', label: 'Tidak Diketahui' },
+		]
+		
+		const optionsPendidikan = [
+			{ value: '0', label: 'Tidak Berpendidikan Formal' },
+			{ value: '1', label: 'SD/Sederajat' },
+			{ value: '2', label: 'SMP/Sederajat' },
+			{ value: '3', label: 'SMA/Sederajat' },
+			{ value: '4', label: 'D1' },
+			{ value: '5', label: 'D2' },
+			{ value: '6', label: 'D3' },
+			{ value: '7', label: 'S1' },
+			{ value: '8', label: 'S2' },
+			{ value: '9', label: '>S2' },
+		]
+	
+		const optionsPekerjaan = [
+			{ value: '1', label: 'Tidak Bekerja' },
+			{ value: '2', label: 'Pensiunan/Almarhum' },
+			{ value: '3', label: 'PNS (selain Guru/Dosen/Dokter/Bidan/Perawat)' },
+			{ value: '4', label: 'TNI/Polisi' },
+			{ value: '5', label: 'Guru/Dosen' },
+			{ value: '6', label: 'Pegawai Swasta' },
+			{ value: '7', label: 'Pengusaha/Wiraswasta' },
+			{ value: '8', label: 'Pengacara/Hakim/Jaksa/Notaris' },
+			{ value: '9', label: 'Seniman/Pelukis/Artis/Sejenis' },
+			{ value: '10', label: 'Dokter/Bidan/Perawat' },
+			{ value: '11', label: 'Pilot/Pramugari' },
+			{ value: '12', label: 'Pedagang' },
+			{ value: '13', label: 'Petani/Peternak' },
+			{ value: '14', label: 'Nelayan' },
+			{ value: '15', label: 'Buruh (Tani/Pabrik/Bangunan)' },
+			{ value: '16', label: 'Sopir/Masinis/Kondektur' },
+			{ value: '17', label: 'Politikus' },
+			{ value: '18', label: 'Lainnya' },
+		]
+	
+		const optionsStatusTempatTinggal = [
+			{ value: '1', label: 'Milik' },
+			{ value: '2', label: 'Rumah Orangtua' },
+			{ value: '3', label: 'Rumah Saudara/Kerabat' },
+			{ value: '4', label: 'Rumah Dinas' },
+		]
+	
+		const optionsJarakRumah = [
+			{ value: '1', label: '< 1 Km' },
+			{ value: '2', label: '1 - 3 Km' },
+			{ value: '3', label: '3 - 5 Km' },
+			{ value: '4', label: '5 - 10 Km' },
+			{ value: '5', label: '> 10 Km' },
+		]
+	
+		const optionsAlatTransportasi = [
+			{ value: '1', label: 'Jalan Kaki' },
+			{ value: '2', label: 'Sepeda' },
+			{ value: '3', label: 'Sepeda Motor' },
+			{ value: '4', label: 'Mobil Pribadi' },
+			{ value: '5', label: 'Antar Jemput Sekolah' },
+			{ value: '6', label: 'Angkutan Umum' },
+			{ value: '7', label: 'Perahu/Sampan' },
+			{ value: '8', label: 'Lainnya' },
+		]
+	
+		const optionsPenghasilan = [
+			{ value: '1', label: '<= Rp 500.000' },
+			{ value: '2', label: 'Rp 500.001 - Rp 1.000.000' },
+			{ value: '3', label: 'Rp 1.000.001 - Rp 2.000.000' },
+			{ value: '4', label: 'Rp 2.000.001 - Rp 3.000.000' },
+			{ value: '5', label: 'Rp 3.000.001 - Rp 5.000.000' },
+			{ value: '6', label: '> Rp 5.000.000' },
+		]
+
+		const agama = optionsAgama.find(dataagama => dataagama.value === String(result[0].agama));
+		const citacita = optionsCitaCita.find(datacitacita => datacitacita.value === String(result[0].cita_cita));
+		const hobi = optionsHobi.find(datahobi => datahobi.value === String(result[0].hobi));
+		const jenjangsekolah = optionsJenjang.find(datajenjang => datajenjang.value === String(result[0].jenjang));
+		const statussekolah = optionsStatusSekolah.find(datastasek => datastasek.value === String(result[0].status_sekolah));
+		const penghasilan = optionsPenghasilan.find(datapenghasilan => datapenghasilan.value === String(result[0].penghasilan));
+		const statusayah = optionsStatusOrtu.find(datastatusayah => datastatusayah.value === String(result[0].status_ayah));
+		const statusibu = optionsStatusOrtu.find(datastatusibu => datastatusibu.value === String(result[0].status_ibu));
+		const pendidikanayah = optionsPendidikan.find(datapendidikanayah => datapendidikanayah.value === String(result[0].pendidikan_ayah));
+		const pendidikanibu = optionsPendidikan.find(datapendidikanibu => datapendidikanibu.value === String(result[0].pendidikan_ibu));
+		const pendidikanwali = optionsPendidikan.find(datapendidikanwali => datapendidikanwali.value === String(result[0].pendidikan_wali));
+		const pekerjaanayah = optionsPekerjaan.find(datapekerjaanayah => datapekerjaanayah.value === String(result[0].pekerjaan_ayah));
+		const pekerjaanibu = optionsPekerjaan.find(datapekerjaanibu => datapekerjaanibu.value === String(result[0].pekerjaan_ibu));
+		const pekerjaanwali = optionsPekerjaan.find(datapekerjaanwali => datapekerjaanwali.value === String(result[0].pekerjaan_wali));
+		const statustempattinggal = optionsStatusTempatTinggal.find(datastatustempattinggal => datastatustempattinggal.value === String(result[0].status_tempat_tinggal));
+		const jarakrumah = optionsJarakRumah.find(datajarakrumah => datajarakrumah.value === String(result[0].jarak_rumah));
+		const transportasi = optionsAlatTransportasi.find(datatransportasi => datatransportasi.value === String(result[0].transportasi));
+		const hasil = {
+			...result[0], 
+			linkGatsa: "http://localhost:5000/bahan/gatsa.png",
+			name: UpperFirstLetter(result[0].name),
+			tempat: UpperFirstLetter(result[0].tempat),
+			alamat: UpperFirstLetter(result[0].alamat),
+			nama_sekolah: UpperFirstLetter(result[0].nama_sekolah),
+			nama_kk: UpperFirstLetter(result[0].nama_kk),
+			nama_ayah: UpperFirstLetter(result[0].nama_ayah),
+			nama_ibu: UpperFirstLetter(result[0].nama_ibu),
+			nama_wali: result[0].nama_wali ? UpperFirstLetter(result[0].nama_wali) : null,
+			nama_provinsi: UpperFirstLetter(result[0].nama_provinsi), 
+			nama_kabkota: UpperFirstLetter(result[0].nama_kabkota),
+			nama_kabkot_sekolah: UpperFirstLetter(result[0].nama_kabkot_sekolah),
+			nama_kecamatan: UpperFirstLetter(result[0].nama_kecamatan),
+			nama_kelurahan: UpperFirstLetter(result[0].nama_kelurahan),
+			tgl_lahir: dateconvert(result[0].tgl_lahir),
+			agama: agama ? agama.label : '-',
+			cita_cita: citacita ? citacita.label : '-',
+			hobi: hobi ? hobi.label : '-',
+			jenjang: jenjangsekolah ? jenjangsekolah.label : '-',
+			jenjang: jenjangsekolah ? jenjangsekolah.label : '-',
+			status_sekolah: statussekolah ? statussekolah.label : '-',
+			penghasilan: penghasilan ? penghasilan.label : '-',
+			status_ayah: statusayah ? statusayah.label : '-',
+			status_ibu: statusibu ? statusibu.label : '-',
+			pendidikan_ayah: pendidikanayah ? pendidikanayah.label : '-',
+			pendidikan_ibu: pendidikanibu ? pendidikanibu.label : '-',
+			pendidikan_wali: pendidikanwali ? pendidikanwali.label : '-',
+			pekerjaan_ayah: pekerjaanayah ? pekerjaanayah.label : '-',
+			pekerjaan_ibu: pekerjaanibu ? pekerjaanibu.label : '-',
+			pekerjaan_wali: pekerjaanwali ? pekerjaanwali.label : '-',
+			status_tempat_tinggal: statustempattinggal ? statustempattinggal.label : '-',
+			jarak_rumah: jarakrumah ? jarakrumah.label : '-',
+			transportasi: transportasi ? transportasi.label : '-',
+		}
+		// console.log(hasil)
+		ejs.renderFile(path.join(__dirname, "../../views/viewSiswa.ejs"),{dataSiswa: hasil}, (err, data) => {
+			if (err) {
+				console.log(err)
+			} else {
+				// console.log(data)
+				let options = {
+					format: "A4",
+					orientation: "portrait",
+					quality: "10000",
+					border: {
+						top: "1.8cm",            // default is 0, units: mm, cm, in, px
+						right: "2cm",
+						bottom: "1.5cm",
+						left: "2cm"
+					},
+					// header: {
+					// 	height: "12mm",
+					// },
+					// footer: {
+					// 	height: "15mm",
+					// },
+					httpHeaders: {
+						"Content-type": "application/pdf",
+					},
+					type: "pdf",
+
+				};
+				pdf.create(data, options).toStream(function(err, stream){
+					stream.pipe(res);
+				});
+			}
+		});
+    });
+};
+
+const kelasSiswa = (res, statementCheck, kelas) => {
+    // jalankan query
+    koneksi.query(statementCheck, kelas, (err, result, field) => {
+        // error handling
+        if (err) {
+            return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+        }
+		kode = 200
+		message = 'Berhasil'
+		response(res, { kode, message, data: result }, 200);
+    });
+};
+
 module.exports = {
+    dataDashboard,
     getUsers,
     createupdateUsers,
     updateUserBY,
@@ -1651,4 +1947,6 @@ module.exports = {
     exportexcel,
     getKelas,
     ambilKelas,
+    detailUserPDF,
+    kelasSiswa,
 }

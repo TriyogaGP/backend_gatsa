@@ -15,13 +15,12 @@ const readDataByID = (req, res) => {
     const querySql = `SELECT a.*, b.*, c.roleName, d.nama as nama_provinsi, e.nama as nama_kabkota, f.nama as nama_kecamatan, g.nama as nama_kelurahan
     FROM users AS a 
     INNER JOIN users_details AS b ON a.id=b.id_profile 
-    INNER JOIN roleUsers AS c ON a.roleID=c.id 
+    INNER JOIN roleusers AS c ON a.roleID=c.id 
     INNER JOIN wilayah AS d ON b.provinsi=d.kode
     INNER JOIN wilayah AS e ON b.kabkota=e.kode
     INNER JOIN wilayah AS f ON b.kecamatan=f.kode
     INNER JOIN wilayah AS g ON b.kelurahan=g.kode
     WHERE a.id = ?`;
-    
     // masukkan ke dalam model
     m_login.getUsersBy(res, querySql, req.params.id);
 };

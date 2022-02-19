@@ -20,8 +20,11 @@ router
     .post('/updateFile', uploadFile, c_user.updateFile)
     .post('/updateBerkas', uploadBerkas, c_user.updateBerkas)
     .get('/downloadexcel/:roleid', c_user.downloadexcel)
-    .get('/exportexcel/:roleid', c_user.exportexcel)
+    .get('/exportexcel/:cari', c_user.exportexcel)
     .get('/getkelas', c_user.getkelas)
     .post('/ambilKelas', c_user.ambilKelas)
+    .get('/detailUserPDF/:id', c_user.detailUserPDF)
+    .get('/dataDashboard', c_user.dataDashboard)
+    .get('/kelasSiswa/:kelas', c_user.kelasSiswa)
     
     module.exports = router;
