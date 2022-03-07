@@ -26,5 +26,6 @@ router
     .get('/detailUserPDF/:id', c_user.detailUserPDF)
     .get('/dataDashboard', c_user.dataDashboard)
     .get('/kelasSiswa/:kelas', c_user.kelasSiswa)
+    .get('/penilaian', c_user.penilaianSiswa)
     
     module.exports = router;

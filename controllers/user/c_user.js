@@ -13,10 +13,10 @@ function convertDate(str) {
 
 const dataDashboard = (req, res) => {
     // buat query sql
-    const querySql = `SELECT a.*, b.* FROM users AS a INNER JOIN users_details AS b ON a.id = b.id_profile WHERE a.roleID != 1`;
-
+    const data = { ...req.query }
+    const querySql = `SELECT a.*, b.* FROM users AS a INNER JOIN users_details AS b ON a.id = b.id_profile WHERE a.roleID != 1`
     // masukkan ke dalam model
-    m_user.dataDashboard(res, querySql);
+    m_user.dataDashboard(res, querySql, data);
 };
 
 const readData = (req, res) => {
@@ -316,6 +316,26 @@ const kelasSiswa = (req, res) => {
     m_user.kelasSiswa(res, querySql, req.params.kelas);
 };
 
+const penilaianSiswa = (req, res) => {
+    // buat variabel penampung data dan query sql
+    const data = { ...req.query };
+    const querySql = `SELECT a.id, a.roleID, a.name, a.email, a.password, a.gambar, a.gambarGmail, a.codeLog, a.kodeOTP, a.activeAkun, a.validasiAkun, a.mutationAkun,
+    DATE_FORMAT(a.createdAt,'%Y-%m-%d') AS createdAt, DATE_FORMAT(a.updatedAt,'%Y-%m-%d') AS updatedAt, b.roleName, 
+    c.*, d.nama as nama_provinsi, e.nama as nama_kabkota, f.nama as nama_kecamatan, g.nama as nama_kelurahan, h.nama as nama_kabkot_sekolah, ROW_NUMBER() OVER(ORDER BY a.id ASC) AS item_no FROM users AS a 
+    INNER JOIN roleusers AS b ON a.roleID=b.id 
+    INNER JOIN users_details AS c ON a.id=c.id_profile
+    INNER JOIN wilayah AS d ON c.provinsi=d.kode
+    INNER JOIN wilayah AS e ON c.kabkota=e.kode
+    INNER JOIN wilayah AS f ON c.kecamatan=f.kode
+    INNER JOIN wilayah AS g ON c.kelurahan=g.kode
+    INNER JOIN wilayah AS h ON c.kabkota=h.kode
+    INNER JOIN jadwal_mengajar AS i ON c.kelas=i.kelas
+    WHERE a.activeAkun = 1 && a.mutationAkun = 0 && i.mapel = ? && i.kelas = ? ORDER BY item_no asc`;
+
+    // masukkan ke dalam model
+    m_user.penilaianSiswa(res, querySql, data);
+};
+
 module.exports = {
     dataDashboard,
     readData,
@@ -337,4 +357,5 @@ module.exports = {
     ambilKelas,
     detailUserPDF,
     kelasSiswa,
+    penilaianSiswa,
 }

@@ -33,23 +33,39 @@ function dateconvert(str) {
 	return valueConvert
 }
 
-const dataDashboard = (res, statement) => {
+const dataDashboard = (res, statement, data) => {
     // jalankan query
 	koneksi.query(statement, (err, result, field) => {
         // error handling
         if (err) {
             return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
         }
-		dataSiswaPria = result.filter((el) => el.roleID === 3 && el.activeAkun === 1 && el.mutationAkun === 0 && el.jeniskelamin === "Laki - Laki").length
-		dataSiswaWanita = result.filter((el) => el.roleID === 3 && el.activeAkun === 1 && el.mutationAkun === 0 && el.jeniskelamin === "Perempuan").length
-		dataSiswaMutasi = result.filter((el) => el.roleID === 3 && (el.activeAkun === 1 || el.activeAkun === 0) && el.mutationAkun === 1).length
-		dataGuru = result.filter((el) => el.roleID === 2 && el.activeAkun === 1).length
-        // console.log(dataSiswaPria, dataSiswaWanita, dataSiswaMutasi, dataGuru)
-		const dataDashboard = {
-			dataSiswaPria: dataSiswaPria,
-			dataSiswaWanita: dataSiswaWanita,
-			dataSiswaMutasi: dataSiswaMutasi,
-			dataGuru: dataGuru
+		//Untuk Administrator
+		let dataDashboard
+		if(data.kode !== 'guru') {
+			let dataSiswaPria = result.filter((el) => el.roleID === 3 && el.activeAkun === 1 && el.mutationAkun === 0 && el.jeniskelamin === "Laki - Laki").length
+			let dataSiswaWanita = result.filter((el) => el.roleID === 3 && el.activeAkun === 1 && el.mutationAkun === 0 && el.jeniskelamin === "Perempuan").length
+			let dataSiswaMutasi = result.filter((el) => el.roleID === 3 && (el.activeAkun === 1 || el.activeAkun === 0) && el.mutationAkun === 1).length
+			let dataGuru = result.filter((el) => el.roleID === 2 && el.activeAkun === 1).length
+			// console.log(dataSiswaPria, dataSiswaWanita, dataSiswaMutasi, dataGuru)
+			dataDashboard = {
+				dataSiswaPria: dataSiswaPria,
+				dataSiswaWanita: dataSiswaWanita,
+				dataSiswaMutasi: dataSiswaMutasi,
+				dataGuru: dataGuru
+			}
+		} else {
+			//Untuk Guru Perseorangan
+			let mencariGuru = result.filter((el) => el.id_profile === parseInt(data.id_profile))
+			const mengajarKelas = String(mencariGuru[0].mengajar_kelas)
+			let MengajarKelas = mengajarKelas.split(', ').sort()
+			let jumlahSiswa
+			let hasilPush = new Array()
+			MengajarKelas.map((kelas) => {
+				jumlahSiswa = result.filter((el) => el.roleID === 3 && el.activeAkun === 1 && el.mutationAkun === 0 && el.kelas === kelas).length
+				hasilPush.push({kelas, jumlahSiswa})
+			})
+			dataDashboard = hasilPush
 		}
         // jika request berhasil
         kode = 200
@@ -1065,17 +1081,17 @@ const downloadexcel = (res, roleid) => {
 			worksheetJabatan.getColumn(i).alignment = { horizontal: "left" };
 		});
 		worksheetJabatan.addRows([
-			{ kode: 'Kepala Sekolah', label: 'Kepala Sekolah' },
-			{ kode: 'WaKaBid. Kesiswaan', label: 'WaKaBid. Kesiswaan' },
-			{ kode: 'WaKaBid. Kurikulum', label: 'WaKaBid. Kurikulum' },
-			{ kode: 'WaKaBid. Sarpras', label: 'WaKaBid. Sarpras' },
-			{ kode: 'Kepala TU', label: 'Kepala TU' },
-			{ kode: 'Staff TU', label: 'Staff TU' },
-			{ kode: 'Wali Kelas', label: 'Wali Kelas' },
-			{ kode: 'BP / BK', label: 'BP / BK' },
-			{ kode: 'Pembina Osis', label: 'Pembina Osis' },
-			{ kode: 'Pembina Extrakurikuler', label: 'Pembina Extrakurikuler' },
-			{ kode: 'Kebersihan', label: 'Kebersihan' },
+			{ value: 'Kepala Sekolah', label: 'Kepala Sekolah' },
+			{ value: 'WaKaBid. Kesiswaan', label: 'WaKaBid. Kesiswaan' },
+			{ value: 'WaKaBid. Kurikulum', label: 'WaKaBid. Kurikulum' },
+			{ value: 'WaKaBid. Sarpras', label: 'WaKaBid. Sarpras' },
+			{ value: 'Kepala TU', label: 'Kepala TU' },
+			{ value: 'Staff TU', label: 'Staff TU' },
+			{ value: 'Wali Kelas', label: 'Wali Kelas' },
+			{ value: 'BP / BK', label: 'BP / BK' },
+			{ value: 'Pembina Osis', label: 'Pembina Osis' },
+			{ value: 'Pembina Pramuka', label: 'Pembina Pramuka' },
+			{ value: 'Pembina Paskibra', label: 'Pembina Paskibra' },
 		]);
 
 		//Pil Bidang Mengajar
@@ -1597,17 +1613,17 @@ const exportexcel = (res, Select, cari, kategori) => {
 				worksheetJabatan.getColumn(i).alignment = { horizontal: "left" };
 			});
 			worksheetJabatan.addRows([
-				{ kode: 'Kepala Sekolah', label: 'Kepala Sekolah' },
-				{ kode: 'WaKaBid. Kesiswaan', label: 'WaKaBid. Kesiswaan' },
-				{ kode: 'WaKaBid. Kurikulum', label: 'WaKaBid. Kurikulum' },
-				{ kode: 'WaKaBid. Sarpras', label: 'WaKaBid. Sarpras' },
-				{ kode: 'Kepala TU', label: 'Kepala TU' },
-				{ kode: 'Staff TU', label: 'Staff TU' },
-				{ kode: 'Wali Kelas', label: 'Wali Kelas' },
-				{ kode: 'BP / BK', label: 'BP / BK' },
-				{ kode: 'Pembina Osis', label: 'Pembina Osis' },
-				{ kode: 'Pembina Extrakurikuler', label: 'Pembina Extrakurikuler' },
-				{ kode: 'Kebersihan', label: 'Kebersihan' },
+				{ value: 'Kepala Sekolah', label: 'Kepala Sekolah' },
+				{ value: 'WaKaBid. Kesiswaan', label: 'WaKaBid. Kesiswaan' },
+				{ value: 'WaKaBid. Kurikulum', label: 'WaKaBid. Kurikulum' },
+				{ value: 'WaKaBid. Sarpras', label: 'WaKaBid. Sarpras' },
+				{ value: 'Kepala TU', label: 'Kepala TU' },
+				{ value: 'Staff TU', label: 'Staff TU' },
+				{ value: 'Wali Kelas', label: 'Wali Kelas' },
+				{ value: 'BP / BK', label: 'BP / BK' },
+				{ value: 'Pembina Osis', label: 'Pembina Osis' },
+				{ value: 'Pembina Pramuka', label: 'Pembina Pramuka' },
+				{ value: 'Pembina Paskibra', label: 'Pembina Paskibra' },
 			]);
 
 			//Pil Bidang Mengajar
@@ -1928,6 +1944,20 @@ const kelasSiswa = (res, statementCheck, kelas) => {
     });
 };
 
+const penilaianSiswa = (res, statementCheck, data) => {
+    // jalankan query
+	console.log(data)
+    koneksi.query(statementCheck, [data.mapel, data.kelas], (err, result, field) => {
+        // error handling
+        if (err) {
+            return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+        }
+		kode = 200
+		message = 'Berhasil'
+		response(res, { kode, message, data: result }, 200);
+    });
+};
+
 module.exports = {
     dataDashboard,
     getUsers,
@@ -1949,4 +1979,5 @@ module.exports = {
     ambilKelas,
     detailUserPDF,
     kelasSiswa,
+    penilaianSiswa,
 }
