@@ -52,8 +52,9 @@ const createupdateData = (req, res) => {
 const updateDataBY = (req, res) => {
     // buat variabel penampung data dan query sql
     const data = { ...req.body };
-    const queryCheck = 'SELECT * FROM users WHERE id = ?';
-    const querySql = 'UPDATE users SET ? WHERE id = ?';
+    // console.log(data)
+    const queryCheck = data.table === 'users' ? 'SELECT * FROM users WHERE id = ?' : 'SELECT * FROM jadwal_mengajar WHERE id_jadwal = ?';
+    const querySql = data.table === 'users' ? 'UPDATE users SET ? WHERE id = ?' : 'UPDATE jadwal_mengajar SET ? WHERE id_jadwal = ?';
     
     // masukkan ke dalam model
     m_user.updateUserBY(res, querySql, queryCheck, data);
@@ -275,9 +276,11 @@ const ambilKelas = (req, res) => {
     INNER JOIN wilayah AS h ON c.kabkota=h.kode
     WHERE a.id = ?`;
     const querySqlUsersDetails = 'UPDATE users_details SET ? WHERE id_profile = ?';
+    const queryCheckNilai = `SELECT * FROM nilai WHERE id_profile = ?`;
+    const querySqlInsert = 'INSERT INTO nilai SET ?';
     
     // // masukkan ke dalam model
-    m_user.ambilKelas(res, queryCheck, querySqlUsersDetails, data);
+    m_user.ambilKelas(res, queryCheck, querySqlUsersDetails, queryCheckNilai, querySqlInsert, data);
 };
 
 const detailUserPDF = (req, res) => {
@@ -321,7 +324,9 @@ const penilaianSiswa = (req, res) => {
     const data = { ...req.query };
     const querySql = `SELECT a.id, a.roleID, a.name, a.email, a.password, a.gambar, a.gambarGmail, a.codeLog, a.kodeOTP, a.activeAkun, a.validasiAkun, a.mutationAkun,
     DATE_FORMAT(a.createdAt,'%Y-%m-%d') AS createdAt, DATE_FORMAT(a.updatedAt,'%Y-%m-%d') AS updatedAt, b.roleName, 
-    c.*, d.nama as nama_provinsi, e.nama as nama_kabkota, f.nama as nama_kecamatan, g.nama as nama_kelurahan, h.nama as nama_kabkot_sekolah, ROW_NUMBER() OVER(ORDER BY a.id ASC) AS item_no FROM users AS a 
+    c.*, d.nama as nama_provinsi, e.nama as nama_kabkota, f.nama as nama_kecamatan, g.nama as nama_kelurahan, h.nama as nama_kabkot_sekolah,
+    j.n_tugas1, j.n_tugas2, j.n_tugas3, j.n_tugas4, j.n_tugas5, j.n_tugas6, j.n_tugas7, j.n_tugas8, j.n_tugas9, j.n_tugas10, j.n_uts, j.n_uas,
+    ROW_NUMBER() OVER(ORDER BY a.id ASC) AS item_no FROM users AS a 
     INNER JOIN roleusers AS b ON a.roleID=b.id 
     INNER JOIN users_details AS c ON a.id=c.id_profile
     INNER JOIN wilayah AS d ON c.provinsi=d.kode
@@ -330,10 +335,50 @@ const penilaianSiswa = (req, res) => {
     INNER JOIN wilayah AS g ON c.kelurahan=g.kode
     INNER JOIN wilayah AS h ON c.kabkota=h.kode
     INNER JOIN jadwal_mengajar AS i ON c.kelas=i.kelas
+    INNER JOIN nilai AS j ON j.id_profile=a.id && j.mapel=i.mapel
     WHERE a.activeAkun = 1 && a.mutationAkun = 0 && i.mapel = ? && i.kelas = ? ORDER BY item_no asc`;
 
     // masukkan ke dalam model
     m_user.penilaianSiswa(res, querySql, data);
+};
+
+const ubahPenilaian = (req, res) => {
+    // buat variabel penampung data dan query sql
+    const data = { ...req.body };
+    const querySql = 'UPDATE nilai SET ? WHERE id_profile = ? && mapel = ?';
+
+    // masukkan ke dalam model
+    m_user.ubahPenilaian(res, querySql, data);
+};
+
+const jadwalNgajar = (req, res) => {
+    // buat variabel penampung data dan query sql
+    const data = { ...req.body };
+    const querySql = 'SELECT * FROM jadwal_mengajar WHERE id_profile = ? && mapel = ? && kelas = ? && status = 1';
+    const querySqlInsert = 'INSERT INTO jadwal_mengajar SET ?';
+
+    // masukkan ke dalam model
+    m_user.jadwalNgajar(res, querySql, querySqlInsert, data);
+};
+
+const getjadwalNgajar = (req, res) => {
+    // buat variabel penampung data dan query sql
+    const querySql = `SELECT a.*, b.name, c.nomor_induk, ROW_NUMBER() OVER(ORDER BY a.mapel ASC) AS item_no FROM jadwal_mengajar AS a 
+        Inner Join users AS b ON b.id = a.id_profile     
+        Inner Join users_details AS c ON c.id_profile = a.id_profile     
+        WHERE a.id_profile = ?
+        Order By a.mapel`;
+
+    // masukkan ke dalam model
+    m_user.getjadwalNgajar(res, querySql, req.params.id);
+};
+
+const deletejadwalNgajar = (req, res) => {
+    // buat variabel penampung data dan query sql
+    const querySql = 'DELETE FROM jadwal_mengajar WHERE id_jadwal = ?';
+    
+    // masukkan ke dalam model
+    m_user.deletejadwalNgajar(res, querySql, req.params.id_jadwal);
 };
 
 module.exports = {
@@ -358,4 +403,8 @@ module.exports = {
     detailUserPDF,
     kelasSiswa,
     penilaianSiswa,
+    ubahPenilaian,
+    jadwalNgajar,
+    getjadwalNgajar,
+    deletejadwalNgajar,
 }

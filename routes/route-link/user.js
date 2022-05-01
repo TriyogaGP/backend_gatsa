@@ -27,5 +27,9 @@ router
     .get('/dataDashboard', c_user.dataDashboard)
     .get('/kelasSiswa/:kelas', c_user.kelasSiswa)
     .get('/penilaian', c_user.penilaianSiswa)
+    .post('/ubahPenilaian', c_user.ubahPenilaian)
+    .post('/jadwalNgajar', c_user.jadwalNgajar)
+    .get('/getjadwalNgajar/:id', c_user.getjadwalNgajar)
+    .delete('/jadwalNgajar/:id_jadwal', c_user.deletejadwalNgajar)
     
     module.exports = router;

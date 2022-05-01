@@ -8,6 +8,7 @@ const ejs = require("ejs");
 const pdf = require("html-pdf");
 const path = require("path");
 const dotenv = require('dotenv');
+const { exit } = require('process');
 dotenv.config();
 
 function makeRandom(n) {
@@ -42,7 +43,7 @@ const dataDashboard = (res, statement, data) => {
         }
 		//Untuk Administrator
 		let dataDashboard
-		if(data.kode !== 'guru') {
+		if(data.kode == 'admin') {
 			let dataSiswaPria = result.filter((el) => el.roleID === 3 && el.activeAkun === 1 && el.mutationAkun === 0 && el.jeniskelamin === "Laki - Laki").length
 			let dataSiswaWanita = result.filter((el) => el.roleID === 3 && el.activeAkun === 1 && el.mutationAkun === 0 && el.jeniskelamin === "Perempuan").length
 			let dataSiswaMutasi = result.filter((el) => el.roleID === 3 && (el.activeAkun === 1 || el.activeAkun === 0) && el.mutationAkun === 1).length
@@ -54,9 +55,10 @@ const dataDashboard = (res, statement, data) => {
 				dataSiswaMutasi: dataSiswaMutasi,
 				dataGuru: dataGuru
 			}
-		} else {
+		} else if(data.kode == 'guru') {
 			//Untuk Guru Perseorangan
 			let mencariGuru = result.filter((el) => el.id_profile === parseInt(data.id_profile))
+			console.log(mencariGuru)
 			const mengajarKelas = String(mencariGuru[0].mengajar_kelas)
 			let MengajarKelas = mengajarKelas.split(', ').sort()
 			let jumlahSiswa
@@ -65,7 +67,12 @@ const dataDashboard = (res, statement, data) => {
 				jumlahSiswa = result.filter((el) => el.roleID === 3 && el.activeAkun === 1 && el.mutationAkun === 0 && el.kelas === kelas).length
 				hasilPush.push({kelas, jumlahSiswa})
 			})
-			dataDashboard = hasilPush
+			dataDashboard = {
+				dataGuru: mencariGuru[0],
+				total: hasilPush
+			}
+		} else if(data.kode == 'siswa') {
+			dataDashboard = null
 		}
         // jika request berhasil
         kode = 200
@@ -374,27 +381,35 @@ const updateUserBY = (res, statement, statementCheck, data) => {
             return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
         }
         if(result.length){
-			switch(data.jenis) {
-				case 'activeAkun' :
-						kirimData = {
-							activeAkun: data.activeAkun
-						}
-						pesan = data.activeAkun === '0' ? 'Berhasil mengubah aktif akun menjadi tidak aktif' : 'Berhasil mengubah aktif akun menjadi aktif'
-					break;
-				case 'validasiAkun' :
-						kirimData = {
-							validasiAkun: data.validasiAkun
-						}
-						pesan = data.validasiAkun === '0' ? 'Berhasil mengubah data akun menjadi tidak tervalidasi' : 'Berhasil mengubah data akun menjadi tervalidasi'
-					break;
-				case 'mutationAkun' :
-						kirimData = {
-							mutationAkun: data.mutationAkun
-						}
-						pesan = data.mutationAkun === '0' ? 'Berhasil mengubah data akun menjadi tidak di mutasi' : 'Berhasil mengubah data akun menjadi di mutasi'
-					break;
-				default:
-					console.log('Error')
+			if(data.table === 'users') {
+				switch(data.jenis) {
+					case 'activeAkun' :
+							kirimData = {
+								activeAkun: data.activeAkun
+							}
+							pesan = data.activeAkun === '0' ? 'Berhasil mengubah aktif Akun menjadi tidak aktif' : 'Berhasil mengubah aktif Akun menjadi aktif'
+						break;
+					case 'validasiAkun' :
+							kirimData = {
+								validasiAkun: data.validasiAkun
+							}
+							pesan = data.validasiAkun === '0' ? 'Berhasil mengubah data Akun menjadi tidak tervalidasi' : 'Berhasil mengubah data Akun menjadi tervalidasi'
+						break;
+					case 'mutationAkun' :
+							kirimData = {
+								activeAkun: data.activeAkun,
+								mutationAkun: data.mutationAkun
+							}
+							pesan = data.mutationAkun === '0' ? 'Berhasil mengubah data Akun menjadi tidak di mutasi' : 'Berhasil mengubah data Akun menjadi di mutasi'
+						break;
+					default:
+						console.log('Error')
+				}
+			}else{
+				kirimData = {
+					status: data.activeStatus
+				}
+				pesan = data.activeStatus === '0' ? 'Berhasil mengubah aktif Jadwal Mengajar menjadi tidak aktif' : 'Berhasil mengubah aktif Jadwal Mengajar menjadi aktif'
 			}
 			koneksi.query(statement, [kirimData, data.id], (err, result, field) => {
                 // error handling
@@ -1110,6 +1125,7 @@ const downloadexcel = (res, roleid) => {
 			{ kode: 'Bahasa Indonesia', label: 'Bahasa Indonesia' },
 			{ kode: 'Bahasa Inggris', label: 'Bahasa Inggris' },
 			{ kode: 'Bahasa Sunda', label: 'Bahasa Sunda' },
+			{ kode: 'BTQ', label: 'BTQ' },
 			{ kode: 'Fiqih', label: 'Fiqih' },
 			{ kode: 'IPA Terpadu', label: 'IPA Terpadu' },
 			{ kode: 'IPS Terpadu', label: 'IPS Terpadu' },
@@ -1284,6 +1300,12 @@ const exportexcel = (res, Select, cari, kategori) => {
 				{ header: "PENDIDIKAN IBU", key: "pendidikan_ibu", width: 20 },
 				{ header: "PEKERJAAN IBU", key: "pekerjaan_ibu", width: 20 },
 				{ header: "NO HANDPHONE IBU", key: "telp_ibu", width: 20 },
+				{ header: "NIK WALI", key: "nik_wali", width: 20 },
+				{ header: "NAMA WALI", key: "nama_wali", width: 20 },
+				{ header: "TAHUN WALI", key: "tahun_wali", width: 20 },
+				{ header: "PENDIDIKAN WALI", key: "pendidikan_wali", width: 20 },
+				{ header: "PEKERJAAN WALI", key: "pekerjaan_wali", width: 20 },
+				{ header: "NO HANDPHONE WALI", key: "telp_wali", width: 20 },
 				{ header: "TELEPON", key: "telp", width: 20 },
 				{ header: "ALAMAT", key: "alamat", width: 40 },
 				{ header: "PROVINSI", key: "provinsi", width: 20 },
@@ -1292,8 +1314,21 @@ const exportexcel = (res, Select, cari, kategori) => {
 				{ header: "KELURAHAN", key: "kelurahan", width: 20 },
 				{ header: "KODE POS", key: "kode_pos", width: 20 },
 				{ header: "PENGHASILAN", key: "penghasilan", width: 20 },
+				{ header: "STATUS TEMPAT TINGGAL", key: "status_tempat_tinggal", width: 20 },
+				{ header: "JARAK RUMAH", key: "jarak_rumah", width: 20 },
+				{ header: "ALAT TRANSPORTASI", key: "transportasi", width: 20 },
+				{ header: "BERKAS IJAZAH", key: "fc_ijazah", width: 20 },
+				{ header: "BERKAS KARTU KELUARGA", key: "fc_kk", width: 20 },
+				{ header: "BERKAS KTP ORANG TUA", key: "fc_ktp_ortu", width: 20 },
+				{ header: "BERKAS AKTA LAHIR", key: "fc_akta_lahir", width: 20 },
+				{ header: "BERKAS SURAT KETERANGAN LULUS", key: "fc_skl", width: 20 },
 			];
-			const figureColumns = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ,19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42];
+			const figureColumns = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 
+				11, 12, 13, 14, 15, 16, 17, 18 ,19, 20, 
+				21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 
+				31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 
+				41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
+				51, 52, 53, 54, 55, 56];
 			figureColumns.forEach((i) => {
 				worksheet.getColumn(i).alignment = { horizontal: "left" };
 			});
@@ -1550,6 +1585,7 @@ const exportexcel = (res, Select, cari, kategori) => {
 				{ header: "JABATAN", key: "jabatan_guru", width: 20 },
 				{ header: "MENGAJAR BIDANG", key: "mengajar_bidang", width: 20 },
 				{ header: "MENGAJAR KELAS", key: "mengajar_kelas", width: 20 },
+				{ header: "WALI KELAS", key: "walikelas", width: 20 },
 				{ header: "TELEPON", key: "telp", width: 20 },
 				{ header: "ALAMAT", key: "alamat", width: 40 },
 				{ header: "PROVINSI", key: "provinsi", width: 20 },
@@ -1558,7 +1594,7 @@ const exportexcel = (res, Select, cari, kategori) => {
 				{ header: "KELURAHAN", key: "kelurahan", width: 20 },
 				{ header: "KODE POS", key: "kode_pos", width: 20 },
 			];
-			const figureColumns = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
+			const figureColumns = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 			figureColumns.forEach((i) => {
 				worksheet.getColumn(i).alignment = { horizontal: "left" };
 			});
@@ -1642,6 +1678,7 @@ const exportexcel = (res, Select, cari, kategori) => {
 				{ kode: 'Bahasa Indonesia', label: 'Bahasa Indonesia' },
 				{ kode: 'Bahasa Inggris', label: 'Bahasa Inggris' },
 				{ kode: 'Bahasa Sunda', label: 'Bahasa Sunda' },
+				{ kode: 'BTQ', label: 'BTQ' },
 				{ kode: 'Fiqih', label: 'Fiqih' },
 				{ kode: 'IPA Terpadu', label: 'IPA Terpadu' },
 				{ kode: 'IPS Terpadu', label: 'IPS Terpadu' },
@@ -1683,7 +1720,7 @@ const getKelas = (res, statementCheck, data) => {
     });
 };
 
-const ambilKelas = (res, statementCheck, statementUserdDetails, data) => {
+const ambilKelas = (res, statementCheck, statementUserdDetails, statementCheckNilai, Insert, data) => {
     // jalankan query
     koneksi.query(statementCheck, data.id, (err, result, field) => {
         // error handling
@@ -1698,15 +1735,39 @@ const ambilKelas = (res, statementCheck, statementUserdDetails, data) => {
 				// error handling
 				if (err) {
 					return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
-				}			
-				koneksi.query(statementCheck, data.id, (err, dataterakhir, field) => {
+				}	
+				koneksi.query(statementCheckNilai, data.id, (err, result, field) => {
 					// error handling
 					if (err) {
 						return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
 					}
-					kode = 200
-					message = 'Berhasil mengambil kelas'
-					response(res, { kode, message, data: dataterakhir[0]}, 200);
+					if(result.length){		
+						koneksi.query(statementCheck, data.id, (err, dataterakhir, field) => {
+							// error handling
+							if (err) {
+								return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+							}
+							kode = 200
+							message = 'Berhasil mengambil kelas'
+							response(res, { kode, message, data: dataterakhir[0]}, 200);
+						});
+					}else{
+						const mapel = ['Alquran Hadits', 'Aqidah Akhlak', 'Bahasa Arab', 'Bahasa Indonesia', 'Bahasa Inggris',
+								'Bahasa Sunda', 'Fiqih', 'IPA Terpadu', 'IPS Terpadu', 'Matematika', 'Penjasorkes', 'PKN',
+								'Prakarya', 'Seni Budaya', 'SKI']
+						for(let i=0;i<mapel.length;i++){
+							const simpanData = {
+								id_profile: data.id,
+								mapel: mapel[i]
+							}
+							koneksi.query(Insert, simpanData, (err, result2, field) => {
+								// error handling
+								if (err) {
+									return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+								}
+							});
+						}
+					}
 				});
 			});
         }else{
@@ -1946,7 +2007,6 @@ const kelasSiswa = (res, statementCheck, kelas) => {
 
 const penilaianSiswa = (res, statementCheck, data) => {
     // jalankan query
-	console.log(data)
     koneksi.query(statementCheck, [data.mapel, data.kelas], (err, result, field) => {
         // error handling
         if (err) {
@@ -1955,6 +2015,109 @@ const penilaianSiswa = (res, statementCheck, data) => {
 		kode = 200
 		message = 'Berhasil'
 		response(res, { kode, message, data: result }, 200);
+    });
+};
+
+const ubahPenilaian = (res, Update, data) => {
+	let dataNilai = data.ubahNilai
+	// jalankan query
+	if(!data.triggerUbah) return response(res, { kode: '404', message: 'Anda belum memilih nilai yang ingin di ubah' }, 404);
+	for(let i=0;i<dataNilai.length;i++){
+		let simpanData
+		if(data.triggerUbah == 'Tugas 1'){
+			simpanData = { n_tugas1: dataNilai[i].nilai ? dataNilai[i].nilai : null }
+		}else if(data.triggerUbah == 'Tugas 2'){
+			simpanData = { n_tugas2: dataNilai[i].nilai ? dataNilai[i].nilai : null }
+		}else if(data.triggerUbah == 'Tugas 3'){
+			simpanData = { n_tugas3: dataNilai[i].nilai ? dataNilai[i].nilai : null }
+		}else if(data.triggerUbah == 'Tugas 4'){
+			simpanData = { n_tugas4: dataNilai[i].nilai ? dataNilai[i].nilai : null }
+		}else if(data.triggerUbah == 'Tugas 5'){
+			simpanData = { n_tugas5: dataNilai[i].nilai ? dataNilai[i].nilai : null }
+		}else if(data.triggerUbah == 'Tugas 6'){
+			simpanData = { n_tugas6: dataNilai[i].nilai ? dataNilai[i].nilai : null }
+		}else if(data.triggerUbah == 'Tugas 7'){
+			simpanData = { n_tugas7: dataNilai[i].nilai ? dataNilai[i].nilai : null }
+		}else if(data.triggerUbah == 'Tugas 8'){
+			simpanData = { n_tugas8: dataNilai[i].nilai ? dataNilai[i].nilai : null }
+		}else if(data.triggerUbah == 'Tugas 9'){
+			simpanData = { n_tugas9: dataNilai[i].nilai ? dataNilai[i].nilai : null }
+		}else if(data.triggerUbah == 'Tugas 10'){
+			simpanData = { n_tugas10: dataNilai[i].nilai ? dataNilai[i].nilai : null }
+		}else if(data.triggerUbah == 'UTS'){
+			simpanData = { n_uts: dataNilai[i].nilai ? dataNilai[i].nilai : null }
+		}else if(data.triggerUbah == 'UAS'){
+			simpanData = { n_uas: dataNilai[i].nilai ? dataNilai[i].nilai : null }
+		}
+		// console.log(simpanData, data.mapel, dataNilai[i].id_profile)
+		koneksi.query(Update, [simpanData, dataNilai[i].id_profile, data.mapel], (err, result2, field) => {
+			// error handling
+			if (err) {
+				return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+			}
+		});
+	}
+	kode = 200
+	message = 'Berhasil'
+	response(res, { kode, message }, 200);
+}
+
+const jadwalNgajar = (res, statement, insert, data) => {
+	koneksi.query(statement, [data.id, data.mapel, data.kelas], (err, result, field) => {
+        // error handling
+        if (err) {
+            return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+        }
+        if(result.length){
+			return response(res, { kode: '404', message: 'Data sudah ada' }, 404);
+		}else{
+			const kirimData = {
+				id_profile: data.id,
+				mapel: data.mapel,
+				kelas: data.kelas,
+				status: '1'
+			}
+			koneksi.query(insert, kirimData, (err, result, field) => {
+				// error handling
+				if (err) {
+					return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+				}
+
+				// jika request berhasil
+				kode = 200
+				message = 'Berhasil'
+				response(res, { kode, message }, 200);
+			});
+		}
+    });
+}
+
+const getjadwalNgajar = (res, statement, id_profile) => {
+	koneksi.query(statement, id_profile, (err, result, field) => {
+        // error handling
+        if (err) {
+            return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+        }
+		// jika request berhasil
+
+		kode = 200
+		message = 'Berhasil'
+		response(res, { kode, message, data: result }, 200);
+    });
+}
+
+const deletejadwalNgajar = (res, statement, id) => {
+    // jalankan query
+    koneksi.query(statement, id, (err, result, field) => {
+        // error handling
+        if (err) {
+            return response(res, { kode: '500', message: 'Terjadi kesalahan pada sistem kami, hubungin admin untuk tindak lanjut penyelesaiannya', error: err }, 500);
+        }
+
+		// jika request berhasil
+		kode = 200
+		message = 'Berhasil'
+		response(res, { kode, message }, 200);
     });
 };
 
@@ -1980,4 +2143,8 @@ module.exports = {
     detailUserPDF,
     kelasSiswa,
     penilaianSiswa,
+    ubahPenilaian,
+    jadwalNgajar,
+    getjadwalNgajar,
+    deletejadwalNgajar,
 }

@@ -6,7 +6,7 @@ const { c_login } = require('../../controllers');
 
 router
     .get('/getdatausers/:idRole', verifyToken, c_login.readData)
-    .post('/updateusers', c_login.updateData)
+    .post('/updateusers', verifyToken, c_login.updateData)
     .get('/getusers/:id', verifyToken, c_login.readDataByID)
     .get('/getuserslock/:id', c_login.readDataByIDLock)
     .post('/register', c_login.register)
